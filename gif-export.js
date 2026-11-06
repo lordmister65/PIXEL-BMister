@@ -6,7 +6,7 @@ if(!Array.isArray(frames)||!frames.length||width<1||height<1)throw Error('Frames
 const bytes=[];const push=(...n)=>bytes.push(...n.map(v=>v&255));const word=n=>push(n&255,(n>>>8)&255);
 const ascii=s=>{for(let i=0;i<s.length;i++)push(s.charCodeAt(i));};
 ascii('GIF89a');word(width);word(height);push(0xf7,0,0);
-for(let i=0;i<256;i++){const v=i===0?0:i-1;push(Math.round(((v>>5)&7)*255/7),Math.round(((v>>2)&7)*255/7),Math.round((v&3)*255/3));}
+for(let i=0;i<256;i++){const v=i===0?0:i===255?255:i-1;push(Math.round(((v>>5)&7)*255/7),Math.round(((v>>2)&7)*255/7),Math.round((v&3)*255/3));}
 if(loop){push(0x21,0xff,11);ascii('NETSCAPE2.0');push(3,1,0,0,0);}
 const delay=Math.max(2,Math.round(100/Math.max(1,Math.min(24,fps||8))));
 function indexed(rgba){if(!rgba||rgba.length!==width*height*4)throw Error('Dimensões inválidas');const idx=new Uint8Array(width*height);for(let i=0;i<idx.length;i++){const o=i*4;if(rgba[o+3]<128){idx[i]=0;continue;}const red=rgba[o]>>5,green=rgba[o+1]>>5,blue=rgba[o+2]>>6;idx[i]=1+Math.min(254,(red<<5)|(green<<2)|blue);}return idx;}
