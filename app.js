@@ -15,7 +15,7 @@ const hex=(r,g,b)=>'#'+[r,g,b].map(n=>clamp(Math.round(n||0),0,255).toString(16)
 function copyFrames(fs){return fs.map(f=>({layers:f.layers.map(l=>({...l,pixels:new Uint8ClampedArray(l.pixels)}))}));}
 const snap=()=>({w,h,fi,li,frames:copyFrames(frames),animationTags:animationTags.map(t=>({...t})),activeTag});
 function checkpoint(label='Edição'){undoStack.push({...snap(),historyLabel:label});if(undoStack.length>40)undoStack.shift();redoStack.length=0;scheduleSave();renderHistory();}
-function restore(s){w=s.w;h=s.h;fi=s.fi;li=s.li;frames=copyFrames(s.frames);animationTags=(s.animationTags||[]).map(t=>({...t}));activeTag=s.activeTag||'all';selection=null;resize();render();}
+function restore(s){w=s.w;h=s.h;fi=s.fi;li=s.li;frames=copyFrames(s.frames);animationTags=(s.animationTags||[]).map(t=>({...t}));activeTag=s.activeTag||'all';refreshAnimationList();selection=null;resize();render();}
 function undo(){if(!undoStack.length)return;const previous=undoStack.pop();redoStack.push({...snap(),historyLabel:previous.historyLabel||'Edição'});restore(previous);renderHistory();}
 function redo(){if(!redoStack.length)return;const next=redoStack.pop();undoStack.push({...snap(),historyLabel:next.historyLabel||'Edição'});restore(next);renderHistory();}
 let toastId;function toast(message){const t=$('toast');t.textContent=message;t.classList.add('show');clearTimeout(toastId);toastId=setTimeout(()=>t.classList.remove('show'),2300);}
