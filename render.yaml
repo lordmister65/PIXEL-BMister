@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: pixel-bmister
+    runtime: static
+    repo: https://github.com/lordmister65/PIXEL-BMister
+    branch: main
+    buildCommand: echo "Static site ready"
+    staticPublishPath: .
+    autoDeployTrigger: commit
