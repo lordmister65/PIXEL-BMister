@@ -35,13 +35,23 @@ Alternativamente, escolha **New > Static Site**, selecione o repositório, use *
 
 Não há necessidade de Node.js, banco de dados ou variáveis de ambiente. A publicação acompanha novos commits na branch `main`.
 
+## Atualizações V1.1 e V1.2
+
+- **Autosave**: guarda o projeto localmente no navegador e recupera ao reabrir. Use Salvar para baixar uma cópia JSON de segurança.
+- **Importar PNG**: importa imagem PNG como uma nova camada no frame atual, recortando ao tamanho do canvas quando a imagem é maior. Não altera resolução automaticamente.
+- **Seleção**: arraste para selecionar. Arraste dentro de uma seleção para mover os pixels da camada ativa. Copie (Ctrl+C), recorte (Ctrl+X), cole (Ctrl+V), apague (Delete), ou use os botões abaixo do canvas. Ctrl+V é a área copiada internamente no editor; não lê a área de transferência do sistema.
+- **Transformações**: espelhar horizontal/verticalmente a seleção ou a camada inteira.
+- **Formas**: retângulos e elipses, com opção de preenchimento.
+- **Desenho simétrico**: espelhamento horizontal ao desenhar.
+- **Cores**: roda de matiz e quadro de saturação/brilho, HEX e RGB.
+
 ## Observações
 
 - O botão **Salvar** baixa um arquivo de projeto JSON no dispositivo: não há armazenamento remoto.
 - O botão **Exportar PNG** exporta **apenas o frame atual**; não exporta GIF nem spritesheet.
-- A ferramenta **Seleção** exibe uma área de seleção, mas ainda não possui recorte/movimentação.
+- O movimento e as transformações afetam apenas a camada selecionada, não múltiplas camadas simultaneamente.
 - Camadas são compartilhadas por estrutura dentro de cada frame: cada frame tem sua própria lista de camadas e pixels.
-- Recomenda-se salvar o projeto periodicamente em JSON.
+- O autosave utiliza o armazenamento local do navegador, sujeito às cotas e à limpeza de dados pelo usuário. Recomenda-se salvar o projeto periodicamente em JSON.
 
 ## Stack
 
