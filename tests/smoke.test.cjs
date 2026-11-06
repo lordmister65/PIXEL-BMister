@@ -1,0 +1,57 @@
+'use strict';
+/* Execute with: node --test tests/smoke.test.cjs */
+const test=require('node:test');
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const vm=require('node:vm');
+const path=require('node:path');
+const root=path.join(__dirname,'..');
+const read=name=>fs.readFileSync(path.join(root,name),'utf8');
+
+test('main JS parses without syntax errors',()=>{
+  assert.doesNotThrow(()=>new vm.Script(read('app.js')));
+  assert.doesNotThrow(()=>new vm.Script(read('gif-export.js')));
+});
+
+test('every statically referenced DOM ID exists',()=>{
+ const html=read('index.html');
+ const ids=[...read('app.js').matchAll(/\$\('([^']+)'\)/g)].map(m=>m[1]);
+ for(const id of new Set(ids))assert.ok(html.includes('id="'+id+'"'),'Missing HTML id: '+id);
+});
+
+test('Render remains a static site',()=>{
+ const config=read('render.yaml');
+ assert.match(config,/runtime:\s*static/);
+ assert.match(config,/staticPublishPath:\s*\./);
+ assert.match(config,/branch:\s*main/);
+});
+
+test('animation controls and tool canvases exist',()=>{
+ const html=read('index.html');
+ for(const id of ['artCanvas','onionCanvas','gridCanvas','overlayCanvas','frameStrip','animationSelect','onionToggle','exportSheetBtn','exportGifBtn','historyList','layerUp','layerDown','duplicateLayer','mergeLayer']){
+   assert.ok(html.includes('id="'+id+'"'),'Required element missing: '+id);
+ }
+});
+
+test('GIF encoder creates valid GIF89a structure including frame blocks',()=>{
+ const window={};
+ const BlobShim=class {constructor(parts,opts){this.data=parts[0];this.type=opts.type;}};
+ const ctx=vm.createContext({window,Blob:BlobShim,Uint8Array,Uint8ClampedArray,Math,Map,Error});
+ vm.runInContext(read('gif-export.js'),ctx);
+ const pixels=new Uint8ClampedArray(32*32*4);
+ for(let i=0;i<32*32;i++){pixels[4*i]=255;pixels[4*i+3]=255;}
+ const blob=window.PixelForgeGif.encode([pixels,pixels],32,32,8,true);
+ const data=blob.data;
+ assert.equal(String.fromCharCode(...data.slice(0,6)),'GIF89a');
+ assert.equal(data[data.length-1],0x3b);
+ assert.equal(blob.type,'image/gif');
+ // A transparent 32x32 canvas still serializes one image descriptor per animation frame.
+ assert.equal([...data].filter(x=>x===0x2c).length>=2,true);
+});
+
+test('all code assets are relative local files for static hosting',()=>{
+ const html=read('index.html');
+ assert.match(html,/src="app\.js"/);
+ assert.match(html,/src="gif-export\.js"/);
+ assert.match(html,/href="style\.css"/);
+});
