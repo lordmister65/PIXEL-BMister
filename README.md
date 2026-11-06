@@ -35,6 +35,16 @@ Alternativamente, escolha **New > Static Site**, selecione o repositório, use *
 
 Não há necessidade de Node.js, banco de dados ou variáveis de ambiente. A publicação acompanha novos commits na branch `main`.
 
+## Manutenção V1.4 — estabilidade
+
+- Correção da movimentação de seleções: preserva integralmente o retângulo ao encostar nas bordas; copiar e colar também respeitam os limites do canvas.
+- Mesclagem de camadas: agora exige ambas as camadas visíveis, evitando apagar conteúdo oculto inadvertidamente. Revele as camadas antes de mesclar.
+- Reprodução: evita recriar todas as miniaturas a cada tick da animação, reduzindo o custo de atualização.
+- Gravação: evita salvar snapshots anteriores à edição e grava traços interrompidos (pointercancel).
+- Histórico: melhora os nomes das ações (lápis, borracha, formas e seleção) e interrompe o preview ao restaurar um estado.
+- Importação: limita JSON a 25 MB, rejeita bytes inválidos e impede exceder o máximo de 100 camadas.
+- Testes de fumaça: `node --test tests/smoke.test.cjs` verifica sintaxe, IDs do HTML, geração GIF e configuração Render. O Node é necessário apenas para testes locais — o editor publicado permanece estático.
+
 ## Atualização V1.4 — editor profissional
 
 - **Camadas avançadas**: reorganize a ordem com ↑/↓, duplique a camada selecionada e mescle-a com a camada abaixo.
