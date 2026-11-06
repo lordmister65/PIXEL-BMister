@@ -35,6 +35,15 @@ Alternativamente, escolha **New > Static Site**, selecione o repositório, use *
 
 Não há necessidade de Node.js, banco de dados ou variáveis de ambiente. A publicação acompanha novos commits na branch `main`.
 
+## Atualização V1.4 — editor profissional
+
+- **Camadas avançadas**: reorganize a ordem com ↑/↓, duplique a camada selecionada e mescle-a com a camada abaixo.
+- **Mesclagem**: preserva a composição visível das duas camadas, incorporando opacidade e visibilidade. A camada superior é removida após mesclar e a operação pode ser desfeita.
+- **Histórico visual**: painel com até 25 estados recentes exibidos e navegação por clique, além de desfazer/refazer. O buffer em memória mantém até 40 operações; limpar o histórico não apaga o desenho.
+- **Aparência do canvas**: alternar fundo quadriculado/transparência para facilitar a inspeção de sprites.
+- **Compatibilidade**: projetos JSON das versões anteriores continuam aceitos, com ordem das camadas mantida no salvamento. O histórico de desfazer/refazer é local à sessão e não é incluído no JSON.
+- **Render**: nenhuma alteração na configuração `render.yaml`, que continua servindo um site estático.
+
 ## Atualização V1.3 — animação
 
 - **Onion Skin**: mostra frames anteriores (azul) e seguintes (rosa) com controle de quantidade e transparência. Não altera os pixels exportados.
