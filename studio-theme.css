@@ -310,3 +310,6 @@ dialog{background:#29292e;border-color:#595660;color:#eeeaf0}
   .canvas-toolbar .mini-btn{min-width:25px;padding:0 4px}
   .studio-menu-list{right:-25px}
 }
+
+/* Keep dropdown actions available at mobile breakpoints despite legacy toolbar hiding rules. */
+.top-actions .studio-menu .studio-menu-item{display:block!important;width:100%;padding:11px 10px!important;text-align:left;font-size:12px!important;white-space:nowrap}
