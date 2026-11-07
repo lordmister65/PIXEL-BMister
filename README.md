@@ -35,6 +35,19 @@ Alternativamente, escolha **New > Static Site**, selecione o repositório, use *
 
 Não há necessidade de Node.js, banco de dados ou variáveis de ambiente. A publicação acompanha novos commits na branch `main`.
 
+## V1.6 — Física, colisão e câmera no Game Lab
+
+- Três mapas maiores com plataformas sólidas: Estúdio, Floresta e Noturno.
+- Câmera lateral acompanhando o personagem, mantendo os limites do cenário.
+- Física de plataforma: gravidade, pulo com acionamento por tecla, aterrissagem e colisões nas laterais/na base de plataformas.
+- Reaparecimento automático quando o personagem cai abaixo do cenário; botão Reiniciar retorna ao começo do mapa.
+- Propriedades ajustáveis no preview: gravidade, força de pulo, velocidade e escala.
+- Indicador X/Y e retângulo visual de colisão do jogador para depuração.
+- Metadados dos pacotes Unity/Godot incluem a física e a geometria do mapa de teste como referência, mas ainda não produzem cenas/colliders prontos nas engines.
+- Hospedagem estática Render preservada: `game-physics.js` roda inteiramente no navegador.
+
+Os testes incluem casos de aterrissagem, pulo, colisão lateral, limites horizontais, respawn e câmera.
+
 ## V1.5 — Modo Desenvolvedor de Jogos (Game Lab)
 
 Abra o botão **🎮 Modo Desenvolvedor** na barra superior do editor. Uma janela independente permite testar o sprite como personagem em uma cena 2D, sem alterar seus pixels no projeto.
