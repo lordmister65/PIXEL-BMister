@@ -46,6 +46,7 @@ Novidades de edição no **Studio Graphite**, sem frameworks ou backend:
 - **Bloqueio de camadas**: use o ícone de cadeado discreto ao lado do nome da camada. Camadas bloqueadas não podem ser desenhadas, apagadas, coladas, movidas, espelhadas, mescladas ou excluídas até serem desbloqueadas. Podem continuar sendo selecionadas para consulta.
 - **Persistência**: o projeto JSON v3 inclui `locked` por camada; JSONs de versões anteriores (sem essa propriedade) abrem com as camadas desbloqueadas. Undo/redo preserva o estado de bloqueio.
 - **Testes**: `node --test tests/smoke.test.cjs` ganhou casos de geometria de pincéis, Pixel Perfect, seleção por cor, máscara de laço e compatibilidade do Render.
+- **CI GitHub Actions**: o workflow `.github/workflows/smoke.yml` executa a suíte de testes com Node.js a cada push e pull request na branch `main`. Isso não afeta o build nem o serviço estático do Render.
 - **Render**: `render.yaml` continua sem alterações; `professional-tools.js` é carregado antes de `app.js` sem dependências externas.
 
 Observação: o redimensionamento é por alças dos cantos da caixa delimitadora, não uma transformação livre com rotação; a seleção por cor atua sobre a **camada ativa**, e não sobre a composição de todas as camadas.
