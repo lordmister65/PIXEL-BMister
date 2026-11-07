@@ -35,6 +35,14 @@ Alternativamente, escolha **New > Static Site**, selecione o repositório, use *
 
 Não há necessidade de Node.js, banco de dados ou variáveis de ambiente. A publicação acompanha novos commits na branch `main`.
 
+## Homologação da V2.0
+
+A homologação automatizada inclui testes reais em **Chromium via Playwright**, além da suíte estática já existente. Foram verificados os fluxos de desenho, undo/redo, bloqueio de camadas, seleção por cor, copiar/colar, PNG, GIF, exportação ZIP Godot, recuperação IndexedDB e abertura do Game Lab. Os testes são executados no GitHub Actions e podem gerar uma captura de tela como artefato.
+
+Corrigimos o acesso às camadas pelo teclado e o manejo de captura de ponteiro após selecionar por cor. O Render continua configurado como **Static Site**, sem alterações no `render.yaml`.
+
+**Matriz de testes, limitações e checklist manual:** [Homologação V2.0](docs/HOMOLOGACAO_V2.md). Ainda é necessário confirmar o deploy publicado e validar Firefox, Safari e dispositivos com toque antes de considerar o editor homologado nesses ambientes.
+
 ## V2.0 — Otimização e Qualidade
 
 Esta versão fortalece o editor sem alterar sua identidade visual **Studio Graphite** ou sua implantação estática no Render.
