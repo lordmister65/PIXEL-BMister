@@ -14,6 +14,7 @@ test('main JS parses without syntax errors',()=>{
   assert.doesNotThrow(()=>new vm.Script(read('game-mode.js')));
   assert.doesNotThrow(()=>new vm.Script(read('game-physics.js')));
   assert.doesNotThrow(()=>new vm.Script(read('studio-ui.js')));
+  assert.doesNotThrow(()=>new vm.Script(read('project-manager.js')));
   assert.doesNotThrow(()=>new vm.Script(read('professional-tools.js')));
 });
 
@@ -199,5 +200,51 @@ test('V1.8 UI includes selection and brush controls and layer locking',()=>{
  assert.match(app,/function resizeSelected\(/);
  assert.match(app,/function setMaskedSelection\(/);
  assert.match(css,/\.layer-lock\.locked/);
+ assert.match(read('render.yaml'),/runtime:\s*static/);
+});
+
+
+test('V1.9 project templates provide valid editable sprites and animations',()=>{
+ const win={};
+ vm.runInNewContext(read('project-manager.js'),{window:win,Math,Date,Uint8ClampedArray,Uint8Array,Promise,JSON,Error});
+ const {makeTemplate}=win.PixelProjectLibrary;
+ for(const [type,w,h,count] of [['sprite16',16,16,1],['character32',32,32,1],['tileset64',64,64,1],['animation32',32,32,8]]){
+  const doc=makeTemplate(type);
+  assert.equal(doc.format,'PIXEL-BMister');
+  assert.equal(doc.width,w);assert.equal(doc.height,h);assert.equal(doc.frames.length,count);
+  assert.equal(doc.frames[0].layers.length,2);
+  for(const frame of doc.frames)for(const layer of frame.layers)assert.equal(layer.pixels.length,w*h*4);
+  assert.ok(doc.frames.some(f=>f.layers[1].pixels.some(v=>v!==0)),'Expected nonempty sample art for '+type);
+  assert.equal(doc.frames[0].layers[1].locked,false);
+ }
+ const animation=makeTemplate('animation32');
+ assert.equal(animation.animationTags.length,2);
+ assert.equal(animation.animationTags[1].end,7);
+});
+
+test('V1.9 new blank project supports custom dimensions and rejects invalid dimensions',()=>{
+ const win={};vm.runInNewContext(read('project-manager.js'),{window:win,Math,Date,Uint8Array,Promise,JSON,Error});
+ const {makeTemplate}=win.PixelProjectLibrary;
+ const doc=makeTemplate('blank','Meu mapa',48,24);
+ assert.equal(doc.name,'Meu mapa');
+ assert.equal(doc.width,48);assert.equal(doc.height,24);
+ assert.ok(doc.frames[0].layers[1].pixels.every(x=>x===0));
+ assert.throws(()=>makeTemplate('blank','Inválido',256,24),/Dimensões/);
+});
+
+test('V1.9 welcome screen and persistent project controls are connected',()=>{
+ const html=read('index.html'),app=read('app.js'),source=read('project-manager.js'),style=read('studio-theme.css');
+ for(const id of ['homeBtn','saveLibraryBtn','projectHome','projectHomeClose','newBlankBtn','confirmBlankProject','recentProjectsList','recentCount','resumeSessionBtn','refreshProjectsBtn','importProjectHomeBtn','blankProjectWidth','blankProjectHeight']){
+  assert.ok(html.includes('id="'+id+'"'),'Missing project manager control: '+id);
+ }
+ for(const type of ['sprite16','character32','tileset64','animation32'])assert.ok(html.includes('data-template="'+type+'"'));
+ assert.match(html,/src="project-manager\.js"/);
+ assert.ok(html.indexOf('src="project-manager.js"')<html.indexOf('src="app.js"'));
+ assert.match(source,/indexedDB\.open|indexedDB\.open|indexedDB/);
+ assert.match(source,/openDatabase/);
+ assert.match(source,/storeSnapshot/);
+ assert.match(app,/window\.PixelProjectManager/);
+ assert.match(app,/libraryId:window\.PixelProjectManager/);
+ assert.match(style,/\.project-home/);
  assert.match(read('render.yaml'),/runtime:\s*static/);
 });
