@@ -221,3 +221,92 @@ dialog{background:#29292e;border-color:#595660;color:#eeeaf0}
   .top-actions #gameModeBtn{font-size:0;padding:6px 8px}
   .top-actions #gameModeBtn::before{content:'▷';font-size:15px}
 }
+
+/* V1.7 Studio UX — professional, adjustable workspace */
+.workspace{--studio-inspector-width:284px;position:relative}
+.inspector{width:var(--studio-inspector-width);min-width:220px;max-width:480px;flex-shrink:0}
+.inspector-resizer{
+  flex:0 0 7px;width:7px;cursor:col-resize;background:#242428;
+  border-left:1px solid #393940;border-right:1px solid #393940;
+  position:relative;touch-action:none;z-index:4;
+}
+.inspector-resizer::after{
+  content:"";position:absolute;top:46%;bottom:46%;left:2px;width:2px;
+  background:#74717f;border-radius:3px;opacity:.6;transition:opacity .15s;
+}
+.inspector-resizer:hover,.inspector-resizer.dragging{background:#34343b}
+.inspector-resizer:hover::after,.inspector-resizer.dragging::after{opacity:1;background:#aaa3b9}
+.inspector-resizer:focus-visible{outline:2px solid #bab4c9;outline-offset:-2px}
+.inspector-toggle-row{
+  display:flex;align-items:center;justify-content:space-between;
+  height:29px;padding:0 3px 0 9px;color:#9894a1;
+  font-size:9px;font-weight:700;letter-spacing:1.6px;
+}
+.studio-tools-collapsed .tools,.studio-inspector-collapsed .inspector,
+.studio-inspector-collapsed .inspector-resizer{display:none}
+.studio-inspector-collapsed .editor,.studio-tools-collapsed .editor{flex:1}
+.studio-panel-toggle{margin-right:6px;font-size:15px}
+.studio-focus-mode .tools,.studio-focus-mode .inspector,
+.studio-focus-mode .inspector-resizer,
+.studio-focus-mode .timeline,.studio-focus-mode .selection-bar,
+.studio-focus-mode .canvas-footer{display:none!important}
+.studio-focus-mode .project-info{display:none}
+.studio-focus-mode .top-actions>:not(#focusModeBtn){display:none!important}
+.studio-focus-mode .editor{flex:1;min-width:0;height:auto}
+.studio-focus-mode .canvas-viewport{min-height:0}
+.studio-focus-mode #focusModeBtn{background:#575262;border-color:#8b849c}
+.canvas-viewport.studio-pan-ready{cursor:grab}
+.canvas-viewport.studio-panning{cursor:grabbing!important;user-select:none}
+.canvas-viewport.studio-pan-ready .canvas-stack #overlayCanvas{cursor:grab!important}
+.canvas-viewport.studio-panning .canvas-stack #overlayCanvas{cursor:grabbing!important}
+.canvas-viewport{overscroll-behavior:contain}
+.studio-menu{position:relative;flex-shrink:0}
+.studio-menu summary{
+  list-style:none;display:flex;align-items:center;gap:9px;min-height:34px;user-select:none
+}
+.studio-menu summary::-webkit-details-marker{display:none}
+.studio-menu summary span{color:#aaa6b5}
+.studio-menu[open] summary{background:#4a4753;border-color:#777184}
+.studio-menu-list{
+  position:absolute;top:calc(100% + 7px);right:0;z-index:50;
+  min-width:205px;padding:5px;background:#303034;
+  border:1px solid #595460;border-radius:8px;
+  box-shadow:0 16px 32px #0009;display:grid;gap:3px;
+}
+.studio-menu-item{
+  text-align:left;border:0;border-radius:5px;background:transparent;
+  padding:11px 10px;color:#e4e1e9;font-size:12px;white-space:nowrap;
+}
+.studio-menu-item:hover,.studio-menu-item:focus-visible{
+  background:#4a4654;color:#fff;outline:none
+}
+#focusModeBtn{font-size:20px}
+#showInspectorBtn{margin-left:3px}
+.canvas-toolbar{flex-wrap:nowrap}
+.canvas-header{gap:10px}
+.canvas-header .eyebrow{margin-right:auto}
+@media(max-width:1140px){
+  .top-actions #gameModeBtn{padding:8px}
+  .top-actions .studio-menu summary{padding:8px}
+}
+@media(max-width:720px){
+  .inspector-resizer{display:none!important}
+  .inspector{min-width:0;max-width:none;width:100%}
+  .studio-inspector-collapsed .inspector{display:none}
+  .studio-tools-collapsed .tools{display:none}
+  .studio-tools-collapsed .editor{min-width:100%}
+  .studio-focus-mode .editor{min-width:100%;height:calc(100dvh - 55px)}
+  .studio-focus-mode .canvas-header{min-height:43px}
+  .top-actions #gameModeBtn{font-size:10px}
+  .top-actions .studio-menu summary{font-size:10px}
+  .canvas-header{padding:0 8px}
+  .canvas-header .eyebrow{display:none}
+}
+@media(max-width:440px){
+  .top-actions #gameModeBtn{display:none}
+  .top-actions #focusModeBtn{display:grid}
+  .top-actions #settingsBtn{display:none}
+  .canvas-toolbar{gap:3px}
+  .canvas-toolbar .mini-btn{min-width:25px;padding:0 4px}
+  .studio-menu-list{right:-25px}
+}
