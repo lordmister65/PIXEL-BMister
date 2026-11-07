@@ -35,6 +35,19 @@ Alternativamente, escolha **New > Static Site**, selecione o repositório, use *
 
 Não há necessidade de Node.js, banco de dados ou variáveis de ambiente. A publicação acompanha novos commits na branch `main`.
 
+## V1.5 — Modo Desenvolvedor de Jogos (Game Lab)
+
+Abra o botão **🎮 Modo Desenvolvedor** na barra superior do editor. Uma janela independente permite testar o sprite como personagem em uma cena 2D, sem alterar seus pixels no projeto.
+
+- **Movimentação**: A/D ou setas; **pulo**: espaço; **ataque**: J. Os botões na tela também permitem controlar pelo toque.
+- **Animações**: escolha a tag de frames correspondente a Idle, Run, Jump e Attack. Quando não há tags, usa todos os frames; tags configuradas na linha do tempo aparecem automaticamente no preview.
+- **Cenários**: estúdio, floresta e noturno; controles de escala visual e velocidade de deslocamento.
+- **Atualização de sprites**: o botão *Atualizar sprites* lê novamente os frames do editor, inclusive após edição ou alterações na linha do tempo.
+- **Exportação Unity/Godot**: ZIP contendo `spritesheet.png`, `metadata.json` e um guia de importação específico. As animações utilizam índices de frames baseados em zero e os intervalos incluem o frame inicial e final. A exportação **não** gera scripts, cenas, prefabs nem controladores prontos.
+- **Hospedagem**: todo o preview e o empacotamento ZIP acontecem no navegador; o Render continua como Static Site.
+
+Os testes de fumaça agora também verificam sintaxe do módulo Game Lab, controles HTML e o formato básico do arquivo ZIP.
+
 ## Manutenção V1.4 — estabilidade
 
 - Correção da movimentação de seleções: preserva integralmente o retângulo ao encostar nas bordas; copiar e colar também respeitam os limites do canvas.
