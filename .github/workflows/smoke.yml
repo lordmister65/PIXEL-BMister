@@ -22,3 +22,28 @@ jobs:
           node-version: '22'
       - name: Run editor smoke tests
         run: node --test tests/smoke.test.cjs
+
+  browser:
+    name: Chromium end-to-end homologation
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install Playwright for CI only
+        run: npm install --no-save --no-package-lock playwright@1.57.0
+      - name: Install Chromium dependencies
+        run: npx playwright install --with-deps chromium
+      - name: Test user flows in Chromium
+        run: node --test tests/browser.test.cjs
+      - name: Upload browser screenshot
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pixel-bmister-studio-homologation
+          path: tests/studio-v2-homologation.png
+          if-no-files-found: ignore
