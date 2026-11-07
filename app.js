@@ -160,4 +160,14 @@ $('historyRedo').onclick=redo;
 $('historyClear').onclick=()=>{undoStack.length=0;redoStack.length=0;renderHistory();toast('Histórico limpo; projeto mantido');};
 
 savingBlocked=true;recoverProject();savingBlocked=false;refreshAnimationList();resize();setColor(ink);render();
+/* V1.5: expose a read-only snapshot of rendered frames to Game Lab. */
+if(window.PixelGameLab){
+ window.PixelGameLab.createGameLab(()=>({
+  name:$('projectName').value.trim()||'PIXEL-BMister',
+  width:w,height:h,fps:clamp(+$('fpsInput').value||8,1,24),
+  tags:animationTags.map(t=>({...t})),
+  frames:frames.map(f=>new Uint8ClampedArray(composite(f)))
+ }));
+}
+
 })();
