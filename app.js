@@ -4,11 +4,14 @@ const $=id=>document.getElementById(id),c=$('artCanvas'),ctx=c.getContext('2d'),
 let w=32,h=32,z=10,fi=0,li=1,tool='pencil',ink='#ff4aaa',size=1,showGrid=true,down=false,start=null,last=null,preview=null,selection=null,playing=false,timer=null,undoStack=[],redoStack=[];
 const pico=['#000000','#1d2b53','#7e2553','#008751','#ab5236','#5f574f','#c2c3c7','#fff1e8','#ff004d','#ffa300','#ffec27','#00e436','#29adff','#83769c','#ff77a8','#ffccaa','#ffffff','#2b2b36','#4b5065','#777d99','#afb7c9','#cbd7f1','#7156cb','#a36df6','#ff4aaa','#54c7ea','#71dfb3','#e27655','#ffd575','#614d44','#ed9a8e','#8c91a6'];
 const blank=()=>new Uint8ClampedArray(w*h*4);
-const mkLayer=name=>({name,visible:true,opacity:1,pixels:blank()});
+const mkLayer=name=>({name,visible:true,opacity:1,locked:false,pixels:blank()});
 const mkFrame=()=>({layers:[mkLayer('Fundo'),mkLayer('Arte')]});
 let frames=Array.from({length:8},mkFrame);
 let animationTags=[],activeTag='all',onionEnabled=false,tagSerial=0,editingTag=null;
 let clipboard=null,moving=false,moveStart=null,moveDelta={x:0,y:0},autosaveTimer=null,savingBlocked=false,hue=330,saturation=0.71,brightness=1;
+const pro=window.PixelProfessionalTools;
+if(!pro)throw Error('professional-tools.js não foi carregado');
+let lassoPath=[],strokePath=[],strokeBase=null,strokeColor=null,resizeCorner=null,resizeTarget=null;
 const frame=()=>frames[fi],layer=()=>frame().layers[li],index=(x,y)=>(y*w+x)*4,clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 const rgb=hex=>[1,3,5].map(i=>parseInt(hex.slice(i,i+2),16));
 const hex=(r,g,b)=>'#'+[r,g,b].map(n=>clamp(Math.round(n||0),0,255).toString(16).padStart(2,'0')).join('');
@@ -29,25 +32,119 @@ function ellipse(a,b,fn,filled=false){let minX=Math.min(a.x,b.x),maxX=Math.max(a
 function rectangle(a,b,fn,filled=false){if(!filled)return rect(a,b,fn);for(let y=Math.min(a.y,b.y);y<=Math.max(a.y,b.y);y++)for(let x=Math.min(a.x,b.x);x<=Math.max(a.x,b.x);x++)fn(x,y);}
 function shape(a,b,fn){if(tool==='line')line(a,b,fn);else if(tool==='rect')rectangle(a,b,fn,$('filledShapes').checked);else if(tool==='ellipse')ellipse(a,b,fn,$('filledShapes').checked);}
 function region(){if(!selection)return null;return{x:Math.min(selection.a.x,selection.b.x),y:Math.min(selection.a.y,selection.b.y),width:Math.abs(selection.a.x-selection.b.x)+1,height:Math.abs(selection.a.y-selection.b.y)+1};}
-function insideSelection(p){let b=region();return b&&p.x>=b.x&&p.x<b.x+b.width&&p.y>=b.y&&p.y<b.y+b.height;}
-function selectionInfo(){let b=region();$('selectionStatus').textContent=b?'Seleção: '+b.width+' × '+b.height+' px':'Sem seleção';}
-function overlay(){ox.clearRect(0,0,w,h);if(selection){let a=selection.a,b=selection.b;if(moving){a={x:a.x+moveDelta.x,y:a.y+moveDelta.y};b={x:b.x+moveDelta.x,y:b.y+moveDelta.y};}outline(a,b,true);}if(down&&start&&preview&&!moving){if(tool==='select')outline(start,preview,true);if(['line','rect','ellipse'].includes(tool)){ox.fillStyle=ink;ox.globalAlpha=.55;shape(start,preview,(x,y)=>ox.fillRect(x,y,1,1));ox.globalAlpha=1;}}selectionInfo();}
+function insideSelection(p){const b=region();return !!(b&&p.x>=b.x&&p.x<b.x+b.width&&p.y>=b.y&&p.y<b.y+b.height&&(!selection.mask||selection.mask[p.y*w+p.x]));}
+function selectionInfo(){const b=region();const count=selection?.mask?selection.mask.reduce((n,v)=>n+!!v,0):b?b.width*b.height:0;$('selectionStatus').textContent=b?'Seleção: '+count+' px ('+b.width+' × '+b.height+')':'Sem seleção';}
+function setMaskedSelection(mask){const b=pro.maskBounds(mask,w,h);selection=b?{a:{x:b.x,y:b.y},b:{x:b.x+b.width-1,y:b.y+b.height-1},mask}:null;overlay();}
+function hasEditableLayer(){if(!layer().locked)return true;toast('Camada bloqueada: desbloqueie para editar');return false;}
+function handleAt(p){const r=region();if(!r||r.width<3||r.height<3)return null;const corners=[{id:'nw',x:r.x,y:r.y},{id:'ne',x:r.x+r.width-1,y:r.y},{id:'sw',x:r.x,y:r.y+r.height-1},{id:'se',x:r.x+r.width-1,y:r.y+r.height-1}];return corners.find(c=>c.x===p.x&&c.y===p.y)?.id||null;}
+function overlay(){ox.clearRect(0,0,w,h);if(selection){let a=selection.a,b=selection.b;if(moving){a={x:a.x+moveDelta.x,y:a.y+moveDelta.y};b={x:b.x+moveDelta.x,y:b.y+moveDelta.y};}if(selection.mask&&!moving){ox.fillStyle='#aaa5bf44';for(let y=0;y<h;y++)for(let x=0;x<w;x++)if(selection.mask[y*w+x])ox.fillRect(x,y,1,1);outline(a,b,false);}else outline(a,b,true);if(tool==='select'||tool==='lasso'||tool==='magic'){const r=region();if(r){ox.fillStyle='#e6e1ee';for(const c of [{x:r.x,y:r.y},{x:r.x+r.width-1,y:r.y},{x:r.x,y:r.y+r.height-1},{x:r.x+r.width-1,y:r.y+r.height-1}])ox.fillRect(c.x+.2,c.y+.2,.6,.6);}}}
+ if(down&&start&&preview&&!moving){if(tool==='select')outline(start,preview,true);if(tool==='lasso'&&lassoPath.length){ox.strokeStyle='#b7aecb';ox.lineWidth=.17;ox.beginPath();lassoPath.forEach((p,i)=>i?ox.lineTo(p.x+.5,p.y+.5):ox.moveTo(p.x+.5,p.y+.5));ox.stroke();}if(resizeCorner&&resizeTarget){outline({x:resizeTarget.x,y:resizeTarget.y},{x:resizeTarget.x+resizeTarget.width-1,y:resizeTarget.y+resizeTarget.height-1},false);}if(['line','rect','ellipse'].includes(tool)){ox.fillStyle=ink;ox.globalAlpha=.55;shape(start,preview,(x,y)=>ox.fillRect(x,y,1,1));ox.globalAlpha=1;}}selectionInfo();}
 function redraw(){put(ctx,composite(frame()));drawOnion();grid();overlay();}
 function zoom(){let s=document.querySelector('.canvas-stack');s.style.width=w*z+'px';s.style.height=h*z+'px';$('zoomLabel').textContent=z*100+'%';$('zoomMini').textContent=z*100+'%';grid();}
 function resize(){[c,gc,oc,nc].forEach(el=>{el.width=w;el.height=h;});$('dimensions').textContent=w+' × '+h;$('sizeInfo').textContent=w+' × '+h+' px';$('newWidth').value=w;$('newHeight').value=h;zoom();}
 function point(e){let r=oc.getBoundingClientRect();return{x:clamp(Math.floor((e.clientX-r.left)*w/r.width),0,w-1),y:clamp(Math.floor((e.clientY-r.top)*h/r.height),0,h-1)};}
 function pixel(x,y,paint){if(x<0||x>=w||y<0||y>=h)return;let i=index(x,y),p=layer().pixels;for(let j=0;j<4;j++)p[i+j]=paint[j];}
-function stamp(x,y,paint){let o=Math.floor((size-1)/2);for(let yy=0;yy<size;yy++)for(let xx=0;xx<size;xx++){let xx0=x-o+xx,yy0=y-o+yy;pixel(xx0,yy0,paint);if($('mirrorDraw').checked)pixel(w-1-xx0,yy0,paint);}}
+function stamp(x,y,paint){for(const p of pro.brushPoints(x,y,size,$('brushShape').value)){pixel(p.x,p.y,paint);if($('mirrorDraw').checked)pixel(w-1-p.x,p.y,paint);}}
 const paint=()=>[...rgb(ink),255],erase=()=>[0,0,0,0];
 function fill(x,y){let p=layer().pixels,i=index(x,y),before=Array.from(p.slice(i,i+4)),after=paint();if(before.every((v,j)=>v===after[j]))return;let todo=[y*w+x],seen=new Uint8Array(w*h);while(todo.length){let q=todo.pop();if(seen[q])continue;seen[q]=1;let i=q*4;if(!before.every((v,j)=>v===p[i+j]))continue;for(let j=0;j<4;j++)p[i+j]=after[j];let x=q%w,y=Math.floor(q/w);if(x>0)todo.push(q-1);if(x<w-1)todo.push(q+1);if(y>0)todo.push(q-w);if(y<h-1)todo.push(q+w);}}
 function setColor(value){if(!/^#[0-9a-f]{6}$/i.test(value))return;ink=value.toLowerCase();updateWheelFromColor(ink);$('colorInput').value=ink;$('hexInput').value=ink.slice(1).toUpperCase();let [r,g,b]=rgb(ink);$('redInput').value=r;$('greenInput').value=g;$('blueInput').value=b;$('colorPreview').style.background=ink;document.querySelectorAll('.swatch').forEach(b=>b.classList.toggle('active',b.dataset.color===ink));}
 function eyedrop(x,y){let p=composite(frame()),i=index(x,y);if(p[i+3])setColor(hex(p[i],p[i+1],p[i+2]));}
 oc.addEventListener('contextmenu',e=>e.preventDefault());
-oc.addEventListener('pointerdown',e=>{if(e.button!==0&&e.button!==2)return;e.preventDefault();stop();let p=point(e);down=true;start=last=preview=p;moving=tool==='select'&&e.button===0&&insideSelection(p);moveStart=moving?p:null;moveDelta={x:0,y:0};oc.dataset.erase=e.button===2?'yes':'no';oc.setPointerCapture(e.pointerId);if(e.button===2||['pencil','eraser','fill'].includes(tool)){checkpoint(e.button===2||tool==='eraser'?'Borracha':tool==='fill'?'Preenchimento':'Lápis');if(tool==='fill'&&e.button!==2)fill(p.x,p.y);else stamp(p.x,p.y,e.button===2||tool==='eraser'?erase():paint());redraw();}else if(tool==='eyedropper'){eyedrop(p.x,p.y);down=false;}else overlay();});
-oc.addEventListener('pointermove',e=>{let p=point(e);$('cursorInfo').textContent='X: '+p.x+'   Y: '+p.y;if(!down)return;preview=p;if(moving){moveDelta={x:p.x-moveStart.x,y:p.y-moveStart.y};overlay();return;}if(oc.dataset.erase==='yes'||tool==='pencil'||tool==='eraser'){line(last,p,(x,y)=>stamp(x,y,oc.dataset.erase==='yes'||tool==='eraser'?erase():paint()));last=p;redraw();}else overlay();});
-oc.addEventListener('pointerup',e=>{if(!down)return;let p=point(e);if(moving){let dx=moveDelta.x,dy=moveDelta.y;if(dx||dy)moveSelected(dx,dy);moving=false;}else{if(['line','rect','ellipse'].includes(tool)){checkpoint(tool==='line'?'Linha':tool==='rect'?'Retângulo':'Elipse');shape(start,p,(x,y)=>stamp(x,y,paint()));}if(tool==='select')selection={a:start,b:p};}down=false;start=preview=null;redraw();renderFrames();scheduleSave();});
-oc.addEventListener('pointercancel',()=>{if(!down)return;down=false;moving=false;start=preview=null;redraw();renderFrames();scheduleSave();});
-const tools={pencil:['Lápis','Desenhe pixels com precisão.','✎'],eraser:['Borracha','Apague pixels da camada.','⌫'],fill:['Balde de tinta','Preencha áreas conectadas.','◈'],select:['Seleção','Selecione uma área retangular.','▧'],eyedropper:['Conta-gotas','Capture uma cor do desenho.','♢'],line:['Linha','Desenhe uma linha reta.','╱'],rect:['Retângulo','Crie um retângulo.','□'],ellipse:['Elipse','Desenhe círculos e elipses.','◯']};
+function finishPerfectStroke(){
+ if(!strokeBase||!strokePath.length)return;
+ layer().pixels.set(strokeBase);
+ for(const p of pro.pixelPerfectPath(strokePath))stamp(p.x,p.y,strokeColor);
+}
+function resizeSelected(target){
+ const original=selectedPixels(),r=region();if(!original||!target||!r||!hasEditableLayer())return;
+ const tw=target.width,th=target.height;
+ if(tw===r.width&&th===r.height&&target.x===r.x&&target.y===r.y)return;
+ checkpoint('Redimensionar seleção');clearArea(r);
+ const pixels=new Uint8ClampedArray(tw*th*4),mask=new Uint8Array(tw*th);
+ for(let y=0;y<th;y++)for(let x=0;x<tw;x++){
+  const sx=Math.min(original.width-1,Math.floor(x*original.width/tw)),sy=Math.min(original.height-1,Math.floor(y*original.height/th));
+  const si=(sy*original.width+sx)*4,di=(y*tw+x)*4;
+  pixels.set(original.pixels.subarray(si,si+4),di);
+  mask[y*tw+x]=original.mask?original.mask[sy*original.width+sx]:1;
+ }
+ placePixels({width:tw,height:th,pixels,mask},target.x,target.y);
+ setSelectionFromChunk({width:tw,height:th,mask},target.x,target.y);render();
+}
+function setSelectionFromChunk(chunk,x,y){
+ const mask=new Uint8Array(w*h);
+ for(let yy=0;yy<chunk.height;yy++)for(let xx=0;xx<chunk.width;xx++){
+  const tx=x+xx,ty=y+yy;
+  if(tx>=0&&ty>=0&&tx<w&&ty<h&&(!chunk.mask||chunk.mask[yy*chunk.width+xx]))mask[ty*w+tx]=1;
+ }
+ setMaskedSelection(mask);
+}
+function targetForResize(corner,p){
+ const r=region();if(!r)return null;
+ let left=r.x,right=r.x+r.width-1,top=r.y,bottom=r.y+r.height-1;
+ if(corner.includes('w'))left=Math.min(p.x,right);else right=Math.max(p.x,left);
+ if(corner.includes('n'))top=Math.min(p.y,bottom);else bottom=Math.max(p.y,top);
+ return {x:left,y:top,width:right-left+1,height:bottom-top+1};
+}
+oc.addEventListener('contextmenu',e=>e.preventDefault());
+oc.addEventListener('pointerdown',e=>{
+ if(e.button!==0&&e.button!==2)return;
+ e.preventDefault();stop();
+ const p=point(e),edit=e.button===2||['pencil','eraser','fill','line','rect','ellipse'].includes(tool);
+ if(edit&&!hasEditableLayer())return;
+ down=true;start=last=preview=p;moveDelta={x:0,y:0};
+ resizeCorner=(tool==='select'&&e.button===0&&selection)?handleAt(p):null;
+ moving=!resizeCorner&&(tool==='select'||tool==='lasso'||tool==='magic')&&e.button===0&&insideSelection(p);
+ moveStart=moving?p:null;resizeTarget=null;
+ oc.dataset.erase=e.button===2?'yes':'no';
+ oc.setPointerCapture(e.pointerId);
+ if(tool==='lasso'&&e.button===0&&!moving)lassoPath=[p];
+ if(tool==='magic'&&e.button===0&&!moving){
+  const mask=pro.colorMask(layer().pixels,w,h,p.x,p.y,+$('colorTolerance').value,$('colorSelectMode').value==='global');
+  setMaskedSelection(mask);down=false;return;
+ }
+ if(e.button===2||['pencil','eraser','fill'].includes(tool)){
+  checkpoint(e.button===2||tool==='eraser'?'Borracha':tool==='fill'?'Preenchimento':'Lápis');
+  strokeColor=e.button===2||tool==='eraser'?[0,0,0,0]:paint();
+  strokePath=[p];
+  strokeBase=$('pixelPerfect').checked&&size===1&&$('brushShape').value==='square'&&tool!=='fill'?new Uint8ClampedArray(layer().pixels):null;
+  if(tool==='fill'&&e.button!==2)fill(p.x,p.y);else stamp(p.x,p.y,strokeColor);
+  redraw();
+ }else if(tool==='eyedropper'){eyedrop(p.x,p.y);down=false;}
+ else overlay();
+});
+oc.addEventListener('pointermove',e=>{
+ const p=point(e);$('cursorInfo').textContent='X: '+p.x+'   Y: '+p.y;
+ if(!down)return;preview=p;
+ if(moving){moveDelta={x:p.x-moveStart.x,y:p.y-moveStart.y};overlay();return;}
+ if(resizeCorner){resizeTarget=targetForResize(resizeCorner,p);overlay();return;}
+ if(tool==='lasso'){if(!lassoPath.length||lassoPath.at(-1).x!==p.x||lassoPath.at(-1).y!==p.y)lassoPath.push(p);overlay();return;}
+ if(oc.dataset.erase==='yes'||tool==='pencil'||tool==='eraser'){
+  line(last,p,(x,y)=>{
+   if(strokePath.length&&strokePath.at(-1).x===x&&strokePath.at(-1).y===y)return;
+   strokePath.push({x,y});
+   if(!strokeBase)stamp(x,y,strokeColor);
+  });
+  if(strokeBase)finishPerfectStroke();
+  last=p;redraw();
+ }else overlay();
+});
+oc.addEventListener('pointerup',e=>{
+ if(!down)return;
+ const p=point(e);
+ if(moving){const {x:dx,y:dy}=moveDelta;if(dx||dy)moveSelected(dx,dy);}
+ else if(resizeCorner)resizeSelected(resizeTarget);
+ else if(['line','rect','ellipse'].includes(tool)){checkpoint(tool==='line'?'Linha':tool==='rect'?'Retângulo':'Elipse');shape(start,p,(x,y)=>stamp(x,y,paint()));}
+ else if(tool==='select')selection={a:start,b:p};
+ else if(tool==='lasso'){if(lassoPath.length>=3)setMaskedSelection(pro.polygonMask(lassoPath,w,h));else selection=null;}
+ down=false;moving=false;resizeCorner=null;resizeTarget=null;start=preview=null;strokePath=[];strokeBase=null;lassoPath=[];
+ redraw();renderFrames();scheduleSave();
+});
+oc.addEventListener('pointercancel',()=>{
+ if(!down)return;
+ down=false;moving=false;resizeCorner=null;resizeTarget=null;start=preview=null;strokePath=[];strokeBase=null;lassoPath=[];
+ redraw();renderFrames();scheduleSave();
+});
+const tools={pencil:['Lápis','Desenhe pixels com precisão.','✎'],eraser:['Borracha','Apague pixels da camada.','⌫'],fill:['Balde de tinta','Preencha áreas conectadas.','◈'],select:['Seleção','Selecione e redimensione uma área.','▧'],lasso:['Laço','Selecione uma região à mão livre.','⌁'],magic:['Seleção por cor','Selecione regiões de cores semelhantes.','✦'],eyedropper:['Conta-gotas','Capture uma cor do desenho.','♢'],line:['Linha','Desenhe uma linha reta.','╱'],rect:['Retângulo','Crie um retângulo.','□'],ellipse:['Elipse','Desenhe círculos e elipses.','◯']};
 function setTool(t){tool=t;document.querySelectorAll('[data-tool]').forEach(b=>b.classList.toggle('active',b.dataset.tool===t));$('toolName').textContent=tools[t][0];$('toolDescription').textContent=tools[t][1];$('toolIcon').textContent=tools[t][2];selection=null;overlay();}
 document.querySelectorAll('[data-tool]').forEach(b=>b.onclick=()=>setTool(b.dataset.tool));
 function swatch(col){let b=document.createElement('button');b.className='swatch';b.style.background=col;b.dataset.color=col.toLowerCase();b.title=col;b.setAttribute('aria-label','Cor '+col);b.onclick=()=>setColor(col);$('palette').append(b);}
@@ -81,7 +178,7 @@ $('loadBtn').onclick=()=>$('fileInput').click();
 $('fileInput').onchange=async e=>{let file=e.target.files[0];if(!file)return;try{let d=JSON.parse(await file.text());if(d.format!=='PIXEL-BMister'||!Number.isInteger(d.width)||!Number.isInteger(d.height)||d.width<8||d.width>128||d.height<8||d.height>128||!Array.isArray(d.frames)||!d.frames.length||d.frames.length>250)throw Error('Formato ou dimensões inválidos');for(let f of d.frames){if(!Array.isArray(f.layers)||!f.layers.length||f.layers.length>100)throw Error('Camadas inválidas');for(let l of f.layers){if(!Array.isArray(l.pixels)||l.pixels.length!==d.width*d.height*4)throw Error('Pixels inválidos');}}checkpoint();stop();w=d.width;h=d.height;frames=d.frames.map(f=>({layers:f.layers.map(l=>({name:String(l.name||'Camada'),visible:l.visible!==false,opacity:clamp(Number(l.opacity)||0,0,1),pixels:new Uint8ClampedArray(l.pixels)}))}));fi=0;li=0;$('projectName').value=d.name||'Meu projeto';$('fpsInput').value=clamp(d.fps||8,1,24);resize();render();toast('Projeto carregado');}catch(err){toast('Erro ao abrir: '+err.message);}e.target.value='';};
 $('settingsBtn').onclick=()=>$('settingsDialog').showModal();$('helpBtn').onclick=()=>$('helpDialog').showModal();
 $('newProjectBtn').onclick=()=>{let nw=+$('newWidth').value,nh=+$('newHeight').value;if(!Number.isInteger(nw)||!Number.isInteger(nh)||nw<8||nw>128||nh<8||nh>128)return toast('Dimensões de 8 a 128 pixels');if(!confirm('Criar uma tela nova? O desenho atual será substituído.'))return;checkpoint();stop();w=nw;h=nh;frames=Array.from({length:8},mkFrame);fi=0;li=1;animationTags=[];activeTag='all';refreshAnimationList();selection=null;resize();render();toast('Nova tela criada');};
-document.addEventListener('keydown',e=>{if(['INPUT','TEXTAREA'].includes(document.activeElement.tagName)||document.querySelector('dialog[open]'))return;if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){e.preventDefault();e.shiftKey?redo():undo();return;}if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='y'){e.preventDefault();redo();return;}if(e.ctrlKey||e.metaKey||e.altKey)return;let key=e.key.toLowerCase(),shortcuts={b:'pencil',e:'eraser',g:'fill',m:'select',i:'eyedropper',l:'line',r:'rect',o:'ellipse'};if(shortcuts[key])setTool(shortcuts[key]);if(e.key==='Escape'){selection=null;overlay();}if(e.key==='Delete'||e.key==='Backspace'){if(selection){e.preventDefault();clearSelected();}}if(key==='p'){e.preventDefault();play();}});
+document.addEventListener('keydown',e=>{if(['INPUT','TEXTAREA'].includes(document.activeElement.tagName)||document.querySelector('dialog[open]'))return;if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){e.preventDefault();e.shiftKey?redo():undo();return;}if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='y'){e.preventDefault();redo();return;}if(e.ctrlKey||e.metaKey||e.altKey)return;let key=e.key.toLowerCase(),shortcuts={b:'pencil',e:'eraser',g:'fill',m:'select',q:'lasso',w:'magic',i:'eyedropper',l:'line',r:'rect',o:'ellipse'};if(shortcuts[key])setTool(shortcuts[key]);if(e.key==='Escape'){selection=null;overlay();}if(e.key==='Delete'||e.key==='Backspace'){if(selection){e.preventDefault();clearSelected();}}if(key==='p'){e.preventDefault();play();}});
 
 /* V1.1–V1.2: autosave, PNG import, editable selection, transforms and HSV color picker */
 const AUTOSAVE_KEY='pixel-bmister-project-v1';
