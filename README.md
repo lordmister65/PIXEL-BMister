@@ -35,6 +35,21 @@ Alternativamente, escolha **New > Static Site**, selecione o repositório, use *
 
 Não há necessidade de Node.js, banco de dados ou variáveis de ambiente. A publicação acompanha novos commits na branch `main`.
 
+## V1.8 — Ferramentas profissionais
+
+Novidades de edição no **Studio Graphite**, sem frameworks ou backend:
+
+- **Pixel Perfect**: ao desenhar com lápis/borracha de 1 px e pincel quadrado, corrige automaticamente cantos extras em trajetórias em formato de L. Ativo por padrão; desative em Propriedades para desenho livre.
+- **Pincéis geométricos**: escolha Quadrado, Círculo ou Losango e ajuste a espessura entre 1 e 8 px. O desenho simétrico horizontal continua disponível.
+- **Laço (Q)**: desenhe uma região livre para selecionar os pixels internos. **Seleção por cor (W)**: captura pixels da camada ativa com modo Contíguo ou Toda a camada e controle de tolerância.
+- **Seleções irregulares**: copiar, recortar, colar, mover, apagar e espelhar preservam a máscara da seleção, inclusive áreas vazias. A seleção retangular (M) dispõe de alças nos quatro cantos para redimensionar pixels pelo método *nearest neighbor*.
+- **Bloqueio de camadas**: use o ícone de cadeado discreto ao lado do nome da camada. Camadas bloqueadas não podem ser desenhadas, apagadas, coladas, movidas, espelhadas, mescladas ou excluídas até serem desbloqueadas. Podem continuar sendo selecionadas para consulta.
+- **Persistência**: o projeto JSON v3 inclui `locked` por camada; JSONs de versões anteriores (sem essa propriedade) abrem com as camadas desbloqueadas. Undo/redo preserva o estado de bloqueio.
+- **Testes**: `node --test tests/smoke.test.cjs` ganhou casos de geometria de pincéis, Pixel Perfect, seleção por cor, máscara de laço e compatibilidade do Render.
+- **Render**: `render.yaml` continua sem alterações; `professional-tools.js` é carregado antes de `app.js` sem dependências externas.
+
+Observação: o redimensionamento é por alças dos cantos da caixa delimitadora, não uma transformação livre com rotação; a seleção por cor atua sobre a **camada ativa**, e não sobre a composição de todas as camadas.
+
 ## V1.7 — Studio UX: produtividade e navegação
 
 A interface Studio Graphite recebeu melhorias de experiência sem remover as funções anteriores:
