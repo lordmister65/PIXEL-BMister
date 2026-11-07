@@ -73,7 +73,7 @@ function makeTemplate(type,name,width,height){
  return{format:'PIXEL-BMister',version:3,name:name||spec[3],width:w,height:h,fps:8,selectedFrame:0,selectedLayer:1,animationTags:tags,activeTag:'all',onionSettings:{enabled:false,previous:1,next:1,opacity:30},loop:true,frames};
 }
 function createManager(adapter){
- let db=null,store=null,activeId=null,initializing=true,changing=false,pending=null,lastSavedRevision=0,revision=0;
+ let db=null,store=null,activeId=null,initializing=true,changing=false,pending=null,lastSavedRevision=0,revision=0,writeQueue=Promise.resolve(),pendingId=null;
  const home=$('projectHome'),recent=$('recentProjectsList'),label=$('recentCount');
  const toast=message=>adapter.notice(message);
  function current(){return adapter.getProject();}
@@ -94,20 +94,27 @@ function createManager(adapter){
  }
  async function saveCurrent(notify=true){
   if(!ensureAvailable())return false;
-  const id=activeId||generateId(),project=current(),savedAt=revision;
+  const id=activeId||pendingId||(pendingId=generateId());
+  const doc=current(),savedAt=revision;
+  // Serialize writes: outdated autosaves cannot overwrite newer work.
+  const task=writeQueue.catch(()=>{}).then(()=>storeSnapshot(id,doc));
+  writeQueue=task;
   try{
-   await storeSnapshot(id,project);
-   if(!activeId)writeActiveId(id);
-   lastSavedRevision=savedAt;
+   await task;
+   if(!activeId){writeActiveId(id);pendingId=null;}
+   if(activeId===id)lastSavedRevision=Math.max(lastSavedRevision,savedAt);
    if(notify)toast('Projeto salvo na biblioteca do navegador');
    return true;
-  }catch(e){toast('Falha ao salvar projeto. Exporte um JSON: '+e.message);return false;}
+  }catch(e){
+   if(pendingId===id)pendingId=null;
+   toast('Falha ao salvar projeto. Exporte um JSON: '+e.message);return false;
+  }
  }
  async function flush(){
   clearTimeout(pending);pending=null;
   if(!store)return false;
+  try{await writeQueue;}catch(e){toast('Falha no último salvamento: '+e.message);return false;}
   if(!activeId){
-   // A previous autosave or unnamed scratchpad must not be discarded by switching.
    const doc=current(),painted=doc.frames.some(f=>f.layers.some(l=>l.pixels.some(v=>v!==0)));
    const customized=doc.name!=='Meu primeiro sprite'||(doc.animationTags?.length||0)>0;
    if(!painted&&!customized)return true;
@@ -118,7 +125,7 @@ function createManager(adapter){
   return saveCurrent(false);
  }
  function onChanged(){
-  if(initializing||changing||!activeId)return;
+  if(initializing||changing)return;
   revision++;
   clearTimeout(pending);
   pending=setTimeout(()=>{pending=null;saveCurrent(false);},1800);
@@ -161,6 +168,7 @@ function createManager(adapter){
   if(!confirm('Excluir "'+rec.name+'" da biblioteca deste navegador? Esta ação não pode ser desfeita.'))return;
   if(id===activeId){
    if(!await flush())return;
+   await writeQueue;
    writeActiveId(null);revision=0;lastSavedRevision=0;
   }
   await store.remove(id);
@@ -203,7 +211,7 @@ function createManager(adapter){
    empty.textContent='Nenhum projeto recente ainda. Crie um modelo ou salve sua sessão para começar.';
    recent.append(empty);return;
   }
-  for(const record of items){
+  for(const record of items.slice(0,40)){
    const card=document.createElement('article');card.className='recent-project-card';
    const preview=document.createElement('div');preview.className='recent-project-image';
    try{preview.append(thumbnail(record.document));}catch(_e){preview.textContent='▦';}
@@ -219,6 +227,7 @@ function createManager(adapter){
    actions.append(open,duplicate,remove);
    card.append(preview,content,actions);recent.append(card);
   }
+  if(items.length>40){const note=document.createElement('p');note.className='project-home-note';note.textContent='Exibindo os 40 projetos mais recentes.';recent.append(note);}
  }
  async function show(){
   await renderList();
