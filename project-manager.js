@@ -45,7 +45,7 @@ function makeTemplate(type,name,width,height){
  const colors={dark:[53,52,60,255],mid:[114,108,123,255],light:[184,172,183,255],blue:[115,139,159,255],green:[107,145,124,255]};
  const put=(f,x,y,color)=>{
   if(x<0||y<0||x>=w||y>=h)return;
-  frames[f].layers[1].pixels.splice((y*w+x)*4,4,...color);
+  const p=frames[f].layers[1].pixels,i=(y*w+x)*4;for(let k=0;k<4;k++)p[i+k]=color[k];
  };
  const rect=(f,x,y,ww,hh,color)=>{for(let yy=y;yy<y+hh;yy++)for(let xx=x;xx<x+ww;xx++)put(f,xx,yy,color);};
  function character(f=0,offset=0){
@@ -109,7 +109,8 @@ function createManager(adapter){
   if(!activeId){
    // A previous autosave or unnamed scratchpad must not be discarded by switching.
    const doc=current(),painted=doc.frames.some(f=>f.layers.some(l=>l.pixels.some(v=>v!==0)));
-   if(!painted)return true;
+   const customized=doc.name!=='Meu primeiro sprite'||(doc.animationTags?.length||0)>0;
+   if(!painted&&!customized)return true;
    try{await storeSnapshot(generateId(),{...doc,name:(doc.name||'Rascunho')+' (recuperado)'});return true;}
    catch(e){toast('Salve o rascunho em JSON antes de continuar: '+e.message);return false;}
   }
@@ -252,7 +253,7 @@ function createManager(adapter){
   catch(e){toast('Biblioteca não disponível; use Salvar JSON');}
   try{
    const previous=localStorage.getItem(ACTIVE_KEY);
-   if(previous&&store){const record=await store.get(previous);if(record){activeId=previous;let session=null;try{session=JSON.parse(localStorage.getItem('pixel-bmister-project-v1')||'null');}catch(_e){}if(session?.libraryId!==previous&&adapter.valid(record.document)){changing=true;try{adapter.loadProject(clone(record.document));}finally{changing=false;}}}}
+   if(previous&&store){const record=await store.get(previous);if(record){activeId=previous;let session=null;try{session=JSON.parse(localStorage.getItem('pixel-bmister-project-v1')||'null');}catch(_e){}if(session?.libraryId===previous&&adapter.valid(session)){revision=1;lastSavedRevision=0;}else if(adapter.valid(record.document)){changing=true;try{adapter.loadProject(clone(record.document));}finally{changing=false;}}}}
   }catch(_e){}
   initializing=false;
   await show();
