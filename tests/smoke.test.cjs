@@ -116,3 +116,31 @@ test('graphite studio theme is applied without replacing application modules',()
  for(const id of ['palettePanel','toolPropertiesPanel','historyPanel'])assert.ok(html.includes('id="'+id+'"'),'Missing inspector anchor '+id);
  assert.match(read('render.yaml'),/runtime:\s*static/);
 });
+
+
+test('Studio UX 1.7 menus preserve existing editor commands',()=>{
+ const html=read('index.html');
+ const ids=['fileMenu','exportMenu','saveBtn','loadBtn','importPngBtn','exportBtn','exportSheetBtn','exportGifBtn','gameModeBtn','focusModeBtn','toggleToolsBtn','toggleInspectorBtn','showInspectorBtn','inspectorResizer','centerCanvasBtn'];
+ for(const id of ids)assert.ok(html.includes('id="'+id+'"'),'Missing workspace control: '+id);
+ for(const file of ['style.css','studio-theme.css','studio-ui.js','app.js'])assert.ok(fs.existsSync(path.join(root,file)),file+' missing');
+ const ui=read('studio-ui.js'),app=read('app.js'),theme=read('studio-theme.css');
+ assert.match(ui,/setPointerCapture/);
+ assert.match(ui,/event\.code==='Space'/);
+ assert.match(ui,/addEventListener\('wheel'/);
+ assert.match(ui,/focusButton/);
+ assert.match(app,/window\.PixelStudioCanvas/);
+ assert.match(app,/if\(key==='p'\)/);
+ assert.match(theme,/studio-focus-mode/);
+ assert.match(theme,/studio-tools-collapsed/);
+ assert.match(theme,/studio-inspector-collapsed/);
+ assert.match(theme,/studio-menu-list/);
+});
+
+test('Studio UX keeps keyboard accessibility and mobile menus',()=>{
+ const html=read('index.html'),css=read('studio-theme.css');
+ assert.match(html,/Shift\+D<\/span>Modo sem distrações/);
+ assert.match(css,/studio-menu \.studio-menu-item\{display:block!important/);
+ assert.match(html,/role="separator"/);
+ assert.match(html,/aria-valuenow="284"/);
+ assert.match(html,/aria-pressed="false"/);
+});
