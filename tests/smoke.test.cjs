@@ -13,6 +13,7 @@ test('main JS parses without syntax errors',()=>{
   assert.doesNotThrow(()=>new vm.Script(read('gif-export.js')));
   assert.doesNotThrow(()=>new vm.Script(read('game-mode.js')));
   assert.doesNotThrow(()=>new vm.Script(read('game-physics.js')));
+  assert.doesNotThrow(()=>new vm.Script(read('studio-ui.js')));
 });
 
 test('every statically referenced DOM ID exists',()=>{
@@ -103,4 +104,15 @@ test('game physics handles landing, jump, wall collision and respawn',()=>{
  assert.equal(p.y,lvl.spawn.y,'respawn y');
  assert.equal(cameraX({x:0},lvl,640),0);
  assert.equal(cameraX({x:lvl.width},lvl,640),lvl.width-640);
+});
+
+test('graphite studio theme is applied without replacing application modules',()=>{
+ const html=read('index.html');
+ assert.match(html,/href="studio-theme\.css"/);
+ assert.match(html,/src="studio-ui\.js"/);
+ assert.ok(html.indexOf('href="style.css"')<html.indexOf('href="studio-theme.css"'),'Theme overrides base CSS');
+ const theme=read('studio-theme.css');
+ for(const part of ['.topbar','.tools','.canvas-viewport','.timeline','.inspector','.game-mode-dialog'])assert.ok(theme.includes(part),'Missing studio selector: '+part);
+ for(const id of ['palettePanel','toolPropertiesPanel','historyPanel'])assert.ok(html.includes('id="'+id+'"'),'Missing inspector anchor '+id);
+ assert.match(read('render.yaml'),/runtime:\s*static/);
 });
