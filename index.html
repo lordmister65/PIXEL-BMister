@@ -64,9 +64,9 @@
     <header class="game-mode-header"><div><span class="game-mode-kicker">PIXEL-BMister · GAME LAB</span><h2>Modo Desenvolvedor de Jogos</h2><p>Teste sprites e movimentos antes de importar para uma engine.</p></div><button id="gameClose" class="mini-btn" aria-label="Fechar modo desenvolvedor">✕</button></header>
     <div class="game-mode-body">
       <div class="game-scene-column">
-        <div class="game-scene-toolbar"><strong>Preview interativo</strong><span id="gameStateLabel">Idle</span><button id="gameReset" class="subtle-btn">↻ Reiniciar</button></div>
+        <div class="game-scene-toolbar"><strong>Preview interativo</strong><span id="gameStateLabel">Idle</span><span id="gamePositionLabel" class="game-position">X 90 · Y 300</span><button id="gameReset" class="subtle-btn">↻ Reiniciar</button></div>
         <canvas id="gameScene" width="640" height="360" tabindex="0" aria-label="Cena de teste jogável com teclado"></canvas>
-        <div class="game-instructions">Mover: <kbd>A</kbd> <kbd>D</kbd> ou <kbd>←</kbd> <kbd>→</kbd> · Pular: <kbd>Espaço</kbd> · Ataque: <kbd>J</kbd> · Clique na cena para focar</div>
+        <div class="game-instructions">Mover: <kbd>A</kbd> <kbd>D</kbd> ou <kbd>←</kbd> <kbd>→</kbd> · Plataformas e câmera · Pular: <kbd>Espaço</kbd> · Ataque: <kbd>J</kbd> · Clique na cena para focar</div>
         <div class="game-touch-controls"><button data-game-key="left" aria-label="Mover esquerda">◀</button><button data-game-key="right" aria-label="Mover direita">▶</button><button id="gameJumpBtn">Pular</button><button id="gameAttackBtn">Atacar</button></div>
       </div>
       <aside class="game-properties">
@@ -77,7 +77,7 @@
         <label>Attack<select id="gameAttack"></select></label>
         <label>Escala <span id="gameScaleLabel">4×</span><input id="gameScale" type="range" min="2" max="8" value="4"></label>
         <label>Velocidade <span id="gameSpeedLabel">150 px/s</span><input id="gameSpeed" type="range" min="60" max="300" step="10" value="150"></label>
-        <label>Cenário<select id="gameBackground"><option value="studio">Estúdio</option><option value="forest">Floresta</option><option value="night">Noturno</option></select></label>
+        <label>Gravidade <span id="gameGravityLabel">1050</span><input id="gameGravity" type="range" min="400" max="2000" step="50" value="1050"></label><label>Força do pulo <span id="gameJumpForceLabel">390</span><input id="gameJumpForce" type="range" min="200" max="700" step="10" value="390"></label><label>Cenário<select id="gameBackground"><option value="studio">Estúdio</option><option value="forest">Floresta</option><option value="night">Noturno</option></select></label>
         <div class="game-export-actions"><button id="gameRefresh" class="btn">Atualizar sprites</button><button id="gameExportUnity" class="btn primary">Exportar Unity</button><button id="gameExportGodot" class="btn primary">Exportar Godot</button></div>
         <p class="game-hint">Exportação: arquivo ZIP com spritesheet PNG, dados JSON e instruções de importação. Os intervalos são baseados nas animações criadas na linha do tempo.</p>
       </aside>
@@ -85,6 +85,7 @@
   </section>
 </dialog>
 <div id="toast" role="status" aria-live="polite"></div>
-<script src="gif-export.js"></script><script src="game-mode.js"></script><script src="app.js"></script>
+<script src="gif-export.js"></script><script src="game-physics.js"></script>
+<script src="game-mode.js"></script><script src="app.js"></script>
 </body>
 </html>
