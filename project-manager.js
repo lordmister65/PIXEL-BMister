@@ -94,10 +94,10 @@ function createManager(adapter){
  }
  async function saveCurrent(notify=true){
   if(!ensureAvailable())return false;
-  if(!activeId)writeActiveId(generateId());
-  const id=activeId,project=current(),savedAt=revision;
+  const id=activeId||generateId(),project=current(),savedAt=revision;
   try{
    await storeSnapshot(id,project);
+   if(!activeId)writeActiveId(id);
    lastSavedRevision=savedAt;
    if(notify)toast('Projeto salvo na biblioteca do navegador');
    return true;
@@ -105,7 +105,14 @@ function createManager(adapter){
  }
  async function flush(){
   clearTimeout(pending);pending=null;
-  if(!activeId||!store)return true;
+  if(!store)return false;
+  if(!activeId){
+   // A previous autosave or unnamed scratchpad must not be discarded by switching.
+   const doc=current(),painted=doc.frames.some(f=>f.layers.some(l=>l.pixels.some(v=>v!==0)));
+   if(!painted)return true;
+   try{await storeSnapshot(generateId(),{...doc,name:(doc.name||'Rascunho')+' (recuperado)'});return true;}
+   catch(e){toast('Salve o rascunho em JSON antes de continuar: '+e.message);return false;}
+  }
   if(revision===lastSavedRevision)return true;
   return saveCurrent(false);
  }
@@ -165,10 +172,10 @@ function createManager(adapter){
   await storeSnapshot(generateId(),copy);
   toast('Cópia criada');await renderList();
  }
- function thumbnail(document){
+ function thumbnail(project){
   const box=document.createElement('canvas');
-  box.width=document.width;box.height=document.height;
-  const frame=document.frames[Math.min(document.selectedFrame||0,document.frames.length-1)];
+  box.width=project.width;box.height=project.height;
+  const frame=project.frames[Math.min(project.selectedFrame||0,project.frames.length-1)];
   const output=new Uint8ClampedArray(box.width*box.height*4);
   for(const l of frame.layers){
    if(l.visible===false)continue;
@@ -245,7 +252,7 @@ function createManager(adapter){
   catch(e){toast('Biblioteca não disponível; use Salvar JSON');}
   try{
    const previous=localStorage.getItem(ACTIVE_KEY);
-   if(previous&&store&&await store.get(previous))activeId=previous;
+   if(previous&&store){const record=await store.get(previous);if(record){activeId=previous;let session=null;try{session=JSON.parse(localStorage.getItem('pixel-bmister-project-v1')||'null');}catch(_e){}if(session?.libraryId!==previous&&adapter.valid(record.document)){changing=true;try{adapter.loadProject(clone(record.document));}finally{changing=false;}}}}
   }catch(_e){}
   initializing=false;
   await show();
