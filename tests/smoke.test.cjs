@@ -93,7 +93,7 @@ test('game physics handles landing, jump, wall collision and respawn',()=>{
  for(let i=0;i<90;i++)tick(p,lvl,{left:false,right:false,jump:false},1/60);
  assert.equal(p.y,300,'land after jump');
  assert.equal(p.grounded,true);
- p.x=230-12-1;p.y=294;p.vy=0;
+ p.x=230-12-1;p.y=255;p.vy=0;
  tick(p,lvl,{left:false,right:true,jump:false},1/60);
  assert.ok(p.x<=230-12,'cannot enter platform side');
  p.x=lvl.width+100;tick(p,lvl,{left:false,right:false,jump:false},1/60);
