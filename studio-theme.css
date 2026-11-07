@@ -437,3 +437,26 @@ dialog{background:#29292e;border-color:#595660;color:#eeeaf0}
  .recent-project-actions{width:100%;flex-direction:row}
  .recent-project-actions button{flex:1}
 }
+
+/* V2.0 — keyboard navigation, accessibility and motion preferences */
+.skip-link{
+ position:fixed;left:12px;top:12px;z-index:1000;
+ padding:10px 15px;border-radius:7px;background:#efedf5;color:#24222b;
+ border:2px solid #8f899f;font-weight:600;
+ transform:translateY(-180%);transition:transform .12s ease
+}
+.skip-link:focus{transform:translateY(0);outline:3px solid #9a95b5;outline-offset:2px}
+#canvasViewport:focus-visible{outline:2px solid #b4afc2;outline-offset:-4px}
+.frame-card:focus-visible,.layer-item:focus-within,.project-feature-card:focus-visible,
+.project-template-card:focus-visible,.recent-project-actions button:focus-visible{
+ outline:2px solid #b5acc4;outline-offset:2px
+}
+#statusText{font-variant-numeric:tabular-nums;min-width:128px;text-align:center}
+@media(prefers-reduced-motion:reduce){
+ *,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;
+ animation-iteration-count:1!important;transition-duration:.01ms!important}
+}
+@media(forced-colors:active){
+ .tool.active,.frame-card.selected,.layer-item.active{outline:2px solid Highlight;outline-offset:1px}
+ .studio-menu-list,.panel,.project-home{border:1px solid CanvasText}
+}
