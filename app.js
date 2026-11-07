@@ -81,7 +81,7 @@ $('loadBtn').onclick=()=>$('fileInput').click();
 $('fileInput').onchange=async e=>{let file=e.target.files[0];if(!file)return;try{let d=JSON.parse(await file.text());if(d.format!=='PIXEL-BMister'||!Number.isInteger(d.width)||!Number.isInteger(d.height)||d.width<8||d.width>128||d.height<8||d.height>128||!Array.isArray(d.frames)||!d.frames.length||d.frames.length>250)throw Error('Formato ou dimensões inválidos');for(let f of d.frames){if(!Array.isArray(f.layers)||!f.layers.length||f.layers.length>100)throw Error('Camadas inválidas');for(let l of f.layers){if(!Array.isArray(l.pixels)||l.pixels.length!==d.width*d.height*4)throw Error('Pixels inválidos');}}checkpoint();stop();w=d.width;h=d.height;frames=d.frames.map(f=>({layers:f.layers.map(l=>({name:String(l.name||'Camada'),visible:l.visible!==false,opacity:clamp(Number(l.opacity)||0,0,1),pixels:new Uint8ClampedArray(l.pixels)}))}));fi=0;li=0;$('projectName').value=d.name||'Meu projeto';$('fpsInput').value=clamp(d.fps||8,1,24);resize();render();toast('Projeto carregado');}catch(err){toast('Erro ao abrir: '+err.message);}e.target.value='';};
 $('settingsBtn').onclick=()=>$('settingsDialog').showModal();$('helpBtn').onclick=()=>$('helpDialog').showModal();
 $('newProjectBtn').onclick=()=>{let nw=+$('newWidth').value,nh=+$('newHeight').value;if(!Number.isInteger(nw)||!Number.isInteger(nh)||nw<8||nw>128||nh<8||nh>128)return toast('Dimensões de 8 a 128 pixels');if(!confirm('Criar uma tela nova? O desenho atual será substituído.'))return;checkpoint();stop();w=nw;h=nh;frames=Array.from({length:8},mkFrame);fi=0;li=1;animationTags=[];activeTag='all';refreshAnimationList();selection=null;resize();render();toast('Nova tela criada');};
-document.addEventListener('keydown',e=>{if(['INPUT','TEXTAREA'].includes(document.activeElement.tagName)||document.querySelector('dialog[open]'))return;if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){e.preventDefault();e.shiftKey?redo():undo();return;}if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='y'){e.preventDefault();redo();return;}if(e.ctrlKey||e.metaKey||e.altKey)return;let key=e.key.toLowerCase(),shortcuts={b:'pencil',e:'eraser',g:'fill',m:'select',i:'eyedropper',l:'line',r:'rect',o:'ellipse'};if(shortcuts[key])setTool(shortcuts[key]);if(e.key==='Escape'){selection=null;overlay();}if(e.key==='Delete'||e.key==='Backspace'){if(selection){e.preventDefault();clearSelected();}}if(e.code==='Space'){e.preventDefault();play();}});
+document.addEventListener('keydown',e=>{if(['INPUT','TEXTAREA'].includes(document.activeElement.tagName)||document.querySelector('dialog[open]'))return;if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){e.preventDefault();e.shiftKey?redo():undo();return;}if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='y'){e.preventDefault();redo();return;}if(e.ctrlKey||e.metaKey||e.altKey)return;let key=e.key.toLowerCase(),shortcuts={b:'pencil',e:'eraser',g:'fill',m:'select',i:'eyedropper',l:'line',r:'rect',o:'ellipse'};if(shortcuts[key])setTool(shortcuts[key]);if(e.key==='Escape'){selection=null;overlay();}if(e.key==='Delete'||e.key==='Backspace'){if(selection){e.preventDefault();clearSelected();}}if(key==='p'){e.preventDefault();play();}});
 
 /* V1.1–V1.2: autosave, PNG import, editable selection, transforms and HSV color picker */
 const AUTOSAVE_KEY='pixel-bmister-project-v1';
@@ -160,6 +160,24 @@ $('historyRedo').onclick=redo;
 $('historyClear').onclick=()=>{undoStack.length=0;redoStack.length=0;renderHistory();toast('Histórico limpo; projeto mantido');};
 
 savingBlocked=true;recoverProject();savingBlocked=false;refreshAnimationList();resize();setColor(ink);render();
+/* V1.7 Studio UX: controlled canvas navigation for the outer workspace module.
+   Does not change pixel storage, drawing, frames, exports or autosave. */
+window.PixelStudioCanvas={
+  getZoom:()=>z,
+  setZoom(value){z=clamp(Math.round(value),2,40);zoom();return z;},
+  getSize:()=>({width:w,height:h}),
+  fit(){
+    const viewport=$('canvasViewport');
+    z=clamp(Math.floor(Math.min((viewport.clientWidth-70)/w,(viewport.clientHeight-70)/h)),2,40);
+    zoom();this.center();return z;
+  },
+  center(){
+    const viewport=$('canvasViewport');
+    viewport.scrollLeft=Math.max(0,(viewport.scrollWidth-viewport.clientWidth)/2);
+    viewport.scrollTop=Math.max(0,(viewport.scrollHeight-viewport.clientHeight)/2);
+  }
+};
+
 /* V1.5: expose a read-only snapshot of rendered frames to Game Lab. */
 if(window.PixelGameLab){
  window.PixelGameLab.createGameLab(()=>({
