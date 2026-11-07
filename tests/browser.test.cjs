@@ -52,7 +52,7 @@ test('V2.0 homepage, drawing, layers, autosave, export and Game Lab', {timeout:1
 
   // Start from a real template and verify the original editor remains functional.
   await page.locator('[data-template="sprite16"]').click();
-  await page.locator('#projectHome:not([open])').waitFor();
+  await page.locator('#projectHome').waitFor({state:'hidden'});
   assert.equal(await page.locator('#artCanvas').evaluate(el=>el.width),16);
   await page.locator('[data-tool="pencil"]').click();
   await page.locator('#colorInput').evaluate(el=>{el.value='#00ff00';el.dispatchEvent(new Event('input',{bubbles:true}));});
@@ -84,7 +84,7 @@ test('V2.0 homepage, drawing, layers, autosave, export and Game Lab', {timeout:1
   await page.locator('#projectHome[open]').waitFor({timeout:12000});
   assert.ok(await page.locator('.recent-project-card').count()>=1,'Recent project entry expected');
   await page.locator('.recent-project-card .recent-project-actions button').first().click();
-  await page.locator('#projectHome:not([open])').waitFor();
+  await page.locator('#projectHome').waitFor({state:'hidden'});
   assert.equal(await page.locator('#artCanvas').evaluate(el=>el.width),16);
   assert.ok((await alphaAt(page,2,2))>0,'Stored project must recover drawn pixels');
 
@@ -92,7 +92,7 @@ test('V2.0 homepage, drawing, layers, autosave, export and Game Lab', {timeout:1
   await page.locator('#homeBtn').click();
   await page.locator('#projectHome[open]').waitFor();
   await page.locator('[data-template="animation32"]').click();
-  await page.locator('#projectHome:not([open])').waitFor();
+  await page.locator('#projectHome').waitFor({state:'hidden'});
   assert.equal(await page.locator('#artCanvas').evaluate(el=>el.width),32);
   assert.equal(await page.locator('.frame-card').count(),8);
   await page.locator('#gameModeBtn').click();
@@ -101,7 +101,7 @@ test('V2.0 homepage, drawing, layers, autosave, export and Game Lab', {timeout:1
   await page.keyboard.press('d');
   await page.waitForTimeout(100);
   await page.locator('#gameClose').click();
-  await page.locator('#gameModeDialog:not([open])').waitFor();
+  await page.locator('#gameModeDialog').waitFor({state:'hidden'});
 
   await page.screenshot({path:path.join(root,'tests','studio-v2-homologation.png'),fullPage:true});
   assert.deepEqual(errors,[],'No unexpected browser console/page errors');
