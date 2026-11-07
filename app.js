@@ -93,7 +93,7 @@ oc.addEventListener('pointerdown',e=>{
  const p=point(e),edit=e.button===2||['pencil','eraser','fill','line','rect','ellipse'].includes(tool);
  if(edit&&!hasEditableLayer())return;
  down=true;start=last=preview=p;moveDelta={x:0,y:0};
- resizeCorner=(tool==='select'&&e.button===0&&selection)?handleAt(p):null;
+ resizeCorner=(['select','lasso','magic'].includes(tool)&&e.button===0&&selection)?handleAt(p):null;
  moving=!resizeCorner&&(tool==='select'||tool==='lasso'||tool==='magic')&&e.button===0&&insideSelection(p);
  moveStart=moving?p:null;resizeTarget=null;
  oc.dataset.erase=e.button===2?'yes':'no';
@@ -134,9 +134,13 @@ oc.addEventListener('pointerup',e=>{
  const p=point(e);
  if(moving){const {x:dx,y:dy}=moveDelta;if(dx||dy)moveSelected(dx,dy);}
  else if(resizeCorner)resizeSelected(resizeTarget);
+ else if(oc.dataset.erase==='yes'||tool==='pencil'||tool==='eraser'){
+  line(last,p,(x,y)=>{if(strokePath.length&&strokePath.at(-1).x===x&&strokePath.at(-1).y===y)return;strokePath.push({x,y});if(!strokeBase)stamp(x,y,strokeColor);});
+  if(strokeBase)finishPerfectStroke();
+ }
  else if(['line','rect','ellipse'].includes(tool)){checkpoint(tool==='line'?'Linha':tool==='rect'?'Retângulo':'Elipse');shape(start,p,(x,y)=>stamp(x,y,paint()));}
  else if(tool==='select')selection={a:start,b:p};
- else if(tool==='lasso'){if(lassoPath.length>=3)setMaskedSelection(pro.polygonMask(lassoPath,w,h));else selection=null;}
+ else if(tool==='lasso'){if(!lassoPath.length||lassoPath.at(-1).x!==p.x||lassoPath.at(-1).y!==p.y)lassoPath.push(p);if(lassoPath.length>=3)setMaskedSelection(pro.polygonMask(lassoPath,w,h));else selection=null;}
  down=false;moving=false;resizeCorner=null;resizeTarget=null;start=preview=null;strokePath=[];strokeBase=null;lassoPath=[];
  redraw();renderFrames();scheduleSave();
 });
