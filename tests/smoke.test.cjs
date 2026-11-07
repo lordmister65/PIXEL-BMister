@@ -248,3 +248,37 @@ test('V1.9 welcome screen and persistent project controls are connected',()=>{
  assert.match(style,/\.project-home/);
  assert.match(read('render.yaml'),/runtime:\s*static/);
 });
+
+
+test('V2.0 frame navigation does not recreate the thumbnail strip or autosave on selection',()=>{
+ const app=read('app.js');
+ const frameMethod=app.slice(app.indexOf('function setFrame(i)'),app.indexOf("$('duplicateFrame').onclick",app.indexOf('function setFrame(i)')));
+ assert.ok(frameMethod.includes('redraw()'));
+ assert.ok(frameMethod.includes('renderLayers()'));
+ assert.ok(!frameMethod.includes('renderFrames()'),'Frame navigation should reuse thumbnails');
+ assert.ok(!frameMethod.includes('scheduleSave()'),'Frame-only navigation should not serialize every pixel');
+ assert.match(app,/aria-pressed/);
+});
+
+test('V2.0 accessibility provides reduced motion, keyboard skip navigation and status messages',()=>{
+ const html=read('index.html'),css=read('studio-theme.css');
+ assert.match(html,/class="skip-link"/);
+ assert.match(html,/id="canvasViewport"[^>]+tabindex="0"/);
+ assert.match(html,/id="statusText"[^>]+aria-live="polite"/);
+ assert.match(html,/id="frameStrip"[^>]+role="group"/);
+ assert.match(css,/prefers-reduced-motion:reduce/);
+ assert.match(css,/forced-colors:active/);
+ assert.match(css,/\.skip-link:focus/);
+});
+
+test('V2.0 saved project validation and storage concurrency safeguards are present',()=>{
+ const app=read('app.js'),library=read('project-manager.js');
+ assert.match(app,/function validateProject\(d\)/);
+ assert.match(app,/Number\.isFinite\(l\.opacity\)/);
+ assert.match(app,/saveStatus='dirty'/);
+ assert.match(app,/saveStatus='error'/);
+ assert.match(library,/writeQueue=Promise\.resolve\(\)/);
+ assert.match(library,/writeQueue\.catch\(\(\)=>\{\}\)\.then/);
+ assert.match(library,/await writeQueue/);
+ assert.match(read('render.yaml'),/runtime:\s*static/);
+});
