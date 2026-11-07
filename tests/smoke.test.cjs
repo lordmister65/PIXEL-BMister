@@ -12,6 +12,7 @@ test('main JS parses without syntax errors',()=>{
   assert.doesNotThrow(()=>new vm.Script(read('app.js')));
   assert.doesNotThrow(()=>new vm.Script(read('gif-export.js')));
   assert.doesNotThrow(()=>new vm.Script(read('game-mode.js')));
+  assert.doesNotThrow(()=>new vm.Script(read('game-physics.js')));
 });
 
 test('every statically referenced DOM ID exists',()=>{
@@ -75,4 +76,31 @@ test('ZIP exporter produces local ZIP headers and two entries',()=>{
  assert.equal(archive.parts[0][1],0x4b);
  assert.equal(archive.parts.at(-1)[0],0x50);
  assert.equal(archive.parts.at(-1)[1],0x4b);
+});
+
+
+test('game physics handles landing, jump, wall collision and respawn',()=>{
+ const win={};vm.runInNewContext(read('game-physics.js'),{window:win,Math,Number,Error});
+ const {levels,createPlayer,tick,cameraX}=win.PixelGamePhysics;
+ assert.ok(Object.keys(levels).length>=3);
+ const lvl=levels.studio,p=createPlayer(90,230);
+ for(let i=0;i<40;i++)tick(p,lvl,{left:false,right:false,jump:false},1/60);
+ assert.equal(p.y,300,'land on ground');
+ assert.equal(p.grounded,true);
+ tick(p,lvl,{left:false,right:false,jump:true},1/60);
+ assert.ok(p.y<300,'jump rises');
+ assert.equal(p.grounded,false);
+ for(let i=0;i<90;i++)tick(p,lvl,{left:false,right:false,jump:false},1/60);
+ assert.equal(p.y,300,'land after jump');
+ assert.equal(p.grounded,true);
+ p.x=230-12-1;p.y=294;p.vy=0;
+ tick(p,lvl,{left:false,right:true,jump:false},1/60);
+ assert.ok(p.x<=230-12,'cannot enter platform side');
+ p.x=lvl.width+100;tick(p,lvl,{left:false,right:false,jump:false},1/60);
+ assert.ok(p.x<=lvl.width-p.halfWidth);
+ p.y=lvl.height+150;tick(p,lvl,{left:false,right:false,jump:false},1/60);
+ assert.equal(p.x,lvl.spawn.x,'respawn x');
+ assert.equal(p.y,lvl.spawn.y,'respawn y');
+ assert.equal(cameraX({x:0},lvl,640),0);
+ assert.equal(cameraX({x:lvl.width},lvl,640),lvl.width-640);
 });
