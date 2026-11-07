@@ -29,7 +29,7 @@
 
  const setPress=(button,value)=>button?.setAttribute('aria-pressed',String(value));
  const toolsButton=$('toggleToolsBtn'),inspectorButton=$('toggleInspectorBtn'),focusButton=$('focusModeBtn');
- const resizer=$('inspectorResizer'),centerButton=$('centerCanvasBtn');
+ const resizer=$('inspectorResizer'),centerButton=$('centerCanvasBtn'),restoreInspectorButton=$('showInspectorBtn');
  let toolsCollapsed=false,inspectorCollapsed=false,focus=false;
  const applyPanels=()=>{
    layout.classList.toggle('studio-tools-collapsed',toolsCollapsed);
@@ -37,12 +37,14 @@
    root.classList.toggle('studio-focus-mode',focus);
    setPress(toolsButton,!toolsCollapsed);
    setPress(inspectorButton,!inspectorCollapsed);
+   setPress(restoreInspectorButton,!inspectorCollapsed);
    setPress(focusButton,focus);
    inspectorButton.title=inspectorCollapsed?'Mostrar painel direito':'Recolher painel direito';
    inspectorButton.textContent=inspectorCollapsed?'‹':'›';
  };
  toolsButton?.addEventListener('click',()=>{toolsCollapsed=!toolsCollapsed;applyPanels();});
  inspectorButton?.addEventListener('click',()=>{inspectorCollapsed=!inspectorCollapsed;applyPanels();});
+ restoreInspectorButton?.addEventListener('click',()=>{inspectorCollapsed=!inspectorCollapsed;applyPanels();});
  focusButton?.addEventListener('click',()=>{focus=!focus;applyPanels();});
  applyPanels();
 
