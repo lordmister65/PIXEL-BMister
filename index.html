@@ -19,7 +19,7 @@
       <button id="saveBtn" class="btn"><span>▣</span> Salvar</button>
       <button id="loadBtn" class="btn">Abrir</button><button id="importPngBtn" class="btn" title="Importar imagem PNG como camada">Importar PNG</button>
       <button id="exportBtn" class="btn primary"><span>⇩</span> Exportar PNG</button><button id="exportSheetBtn" class="btn" title="Exportar spritesheet PNG">Spritesheet</button><button id="exportGifBtn" class="btn" title="Exportar GIF animado">GIF</button>
-      <button id="settingsBtn" class="icon-btn" title="Configurações" aria-label="Configurações">⚙</button>
+      <button id="gameModeBtn" class="btn game-mode-launch" title="Testar sprites em uma cena jogável">🎮 Modo Desenvolvedor</button><button id="settingsBtn" class="icon-btn" title="Configurações" aria-label="Configurações">⚙</button>
     </div>
   </header>
   <div class="workspace">
@@ -59,7 +59,32 @@
 <dialog id="settingsDialog"><form method="dialog" class="dialog-body"><div class="dialog-head"><h2>Configurações do projeto</h2><button value="cancel" class="mini-btn" aria-label="Fechar">✕</button></div><p class="muted">Crie uma nova tela. Isso substituirá o desenho atual.</p><label>Largura (px)<input type="number" id="newWidth" min="8" max="128" value="32"></label><label>Altura (px)<input type="number" id="newHeight" min="8" max="128" value="32"></label><div class="dialog-actions"><button value="cancel" class="btn">Cancelar</button><button id="newProjectBtn" value="cancel" class="btn primary">Criar tela</button></div></form></dialog>
 <dialog id="helpDialog"><form method="dialog" class="dialog-body"><div class="dialog-head"><h2>Atalhos</h2><button value="cancel" class="mini-btn">✕</button></div><div class="shortcuts"><span>B</span>Lápis<span>E</span>Borracha<span>G</span>Balde<span>M</span>Seleção<span>I</span>Conta-gotas<span>L</span>Linha<span>R</span>Retângulo<span>O</span>Elipse<span>Ctrl+C/V</span>Copiar/colar seleção<span>Delete</span>Apagar seleção<span>Ctrl+Z</span>Desfazer<span>Ctrl+Y</span>Refazer<span>Espaço</span>Reproduzir</div><div class="dialog-actions"><button value="cancel" class="btn primary">Entendi</button></div></form></dialog>
 <input id="fileInput" type="file" accept=".json,application/json" hidden><input id="pngInput" type="file" accept="image/png" hidden>
-<dialog id="animationDialog"><form method="dialog" class="dialog-body"><div class="dialog-head"><h2 id="animationDialogTitle">Nova animação</h2><button value="cancel" class="mini-btn" aria-label="Fechar">✕</button></div><label>Nome da animação<input type="text" id="animationName" maxlength="40" value="Idle" required></label><label>Frame inicial (começa em 1)<input type="number" id="animationStart" min="1" value="1"></label><label>Frame final<input type="number" id="animationEnd" min="1" value="8"></label><div class="dialog-actions"><button value="cancel" class="btn">Cancelar</button><button id="confirmAnimation" value="cancel" class="btn primary">Salvar animação</button></div></form></dialog><div id="toast" role="status" aria-live="polite"></div>
-<script src="gif-export.js"></script><script src="app.js"></script>
+<dialog id="animationDialog"><form method="dialog" class="dialog-body"><div class="dialog-head"><h2 id="animationDialogTitle">Nova animação</h2><button value="cancel" class="mini-btn" aria-label="Fechar">✕</button></div><label>Nome da animação<input type="text" id="animationName" maxlength="40" value="Idle" required></label><label>Frame inicial (começa em 1)<input type="number" id="animationStart" min="1" value="1"></label><label>Frame final<input type="number" id="animationEnd" min="1" value="8"></label><div class="dialog-actions"><button value="cancel" class="btn">Cancelar</button><button id="confirmAnimation" value="cancel" class="btn primary">Salvar animação</button></div></form></dialog><dialog id="gameModeDialog" class="game-mode-dialog" aria-label="Modo Desenvolvedor de Jogos">
+  <section class="game-mode-shell">
+    <header class="game-mode-header"><div><span class="game-mode-kicker">PIXEL-BMister · GAME LAB</span><h2>Modo Desenvolvedor de Jogos</h2><p>Teste sprites e movimentos antes de importar para uma engine.</p></div><button id="gameClose" class="mini-btn" aria-label="Fechar modo desenvolvedor">✕</button></header>
+    <div class="game-mode-body">
+      <div class="game-scene-column">
+        <div class="game-scene-toolbar"><strong>Preview interativo</strong><span id="gameStateLabel">Idle</span><button id="gameReset" class="subtle-btn">↻ Reiniciar</button></div>
+        <canvas id="gameScene" width="640" height="360" tabindex="0" aria-label="Cena de teste jogável com teclado"></canvas>
+        <div class="game-instructions">Mover: <kbd>A</kbd> <kbd>D</kbd> ou <kbd>←</kbd> <kbd>→</kbd> · Pular: <kbd>Espaço</kbd> · Ataque: <kbd>J</kbd> · Clique na cena para focar</div>
+        <div class="game-touch-controls"><button data-game-key="left" aria-label="Mover esquerda">◀</button><button data-game-key="right" aria-label="Mover direita">▶</button><button id="gameJumpBtn">Pular</button><button id="gameAttackBtn">Atacar</button></div>
+      </div>
+      <aside class="game-properties">
+        <h3>Configurações do personagem</h3>
+        <label>Idle<select id="gameIdle"></select></label>
+        <label>Run / Walk<select id="gameRun"></select></label>
+        <label>Jump<select id="gameJump"></select></label>
+        <label>Attack<select id="gameAttack"></select></label>
+        <label>Escala <span id="gameScaleLabel">4×</span><input id="gameScale" type="range" min="2" max="8" value="4"></label>
+        <label>Velocidade <span id="gameSpeedLabel">150 px/s</span><input id="gameSpeed" type="range" min="60" max="300" step="10" value="150"></label>
+        <label>Cenário<select id="gameBackground"><option value="studio">Estúdio</option><option value="forest">Floresta</option><option value="night">Noturno</option></select></label>
+        <div class="game-export-actions"><button id="gameRefresh" class="btn">Atualizar sprites</button><button id="gameExportUnity" class="btn primary">Exportar Unity</button><button id="gameExportGodot" class="btn primary">Exportar Godot</button></div>
+        <p class="game-hint">Exportação: arquivo ZIP com spritesheet PNG, dados JSON e instruções de importação. Os intervalos são baseados nas animações criadas na linha do tempo.</p>
+      </aside>
+    </div>
+  </section>
+</dialog>
+<div id="toast" role="status" aria-live="polite"></div>
+<script src="gif-export.js"></script><script src="game-mode.js"></script><script src="app.js"></script>
 </body>
 </html>
