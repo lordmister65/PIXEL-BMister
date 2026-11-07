@@ -14,6 +14,7 @@ test('main JS parses without syntax errors',()=>{
   assert.doesNotThrow(()=>new vm.Script(read('game-mode.js')));
   assert.doesNotThrow(()=>new vm.Script(read('game-physics.js')));
   assert.doesNotThrow(()=>new vm.Script(read('studio-ui.js')));
+  assert.doesNotThrow(()=>new vm.Script(read('professional-tools.js')));
 });
 
 test('every statically referenced DOM ID exists',()=>{
@@ -143,4 +144,60 @@ test('Studio UX keeps keyboard accessibility and mobile menus',()=>{
  assert.match(html,/role="separator"/);
  assert.match(html,/aria-valuenow="284"/);
  assert.match(html,/aria-pressed="false"/);
+});
+
+
+test('V1.8 pixel-perfect path removes only redundant L corner',()=>{
+ const window={};vm.runInNewContext(read('professional-tools.js'),{window,Math,Uint8Array,Number});
+ const pro=window.PixelProfessionalTools;
+ const path=pro.pixelPerfectPath([{x:0,y:0},{x:1,y:0},{x:1,y:1}]);
+ assert.equal(path.length,2);
+ assert.deepEqual(JSON.parse(JSON.stringify(path)),[{x:0,y:0},{x:1,y:1}]);
+ assert.equal(pro.pixelPerfectPath([{x:0,y:0},{x:1,y:0},{x:2,y:0}]).length,3);
+});
+
+test('V1.8 geometric brushes are distinct and centered',()=>{
+ const win={};vm.runInNewContext(read('professional-tools.js'),{window:win,Math,Uint8Array,Number});
+ const {brushPoints}=win.PixelProfessionalTools;
+ assert.equal(brushPoints(5,5,3,'square').length,9);
+ assert.ok(brushPoints(5,5,5,'circle').length<25);
+ assert.ok(brushPoints(5,5,5,'diamond').length<25);
+ assert.deepEqual(JSON.parse(JSON.stringify(brushPoints(4,4,1,'square'))),[{x:4,y:4}]);
+});
+
+test('V1.8 color selection supports contiguous/global masks and alpha',()=>{
+ const win={};vm.runInNewContext(read('professional-tools.js'),{window:win,Math,Uint8Array,Number});
+ const {colorMask}=win.PixelProfessionalTools;
+ const pix=new Uint8Array(5*4);pix.set([255,0,0,255],0);pix.set([255,0,0,255],8);pix.set([10,0,0,255],12);
+ const contiguous=colorMask(pix,5,1,0,0,0,false),global=colorMask(pix,5,1,0,0,0,true);
+ assert.equal(contiguous[0],1);assert.equal(contiguous[2],0);
+ assert.equal(global[0],1);assert.equal(global[2],1);assert.equal(global[3],0);
+});
+
+test('V1.8 lasso masks preserve irregular selection boundaries',()=>{
+ const win={};vm.runInNewContext(read('professional-tools.js'),{window:win,Math,Uint8Array,Number});
+ const {polygonMask,maskBounds}=win.PixelProfessionalTools;
+ const mask=polygonMask([{x:1,y:1},{x:4,y:1},{x:2,y:4}],6,6);
+ assert.equal(mask[0],0);
+ assert.equal(mask[2*6+2],1);
+ assert.ok(mask.reduce((n,x)=>n+x,0)<6*6);
+ const bounds=maskBounds(mask,6,6);
+ assert.equal(bounds.x,1);assert.equal(bounds.y,1);
+});
+
+test('V1.8 UI includes selection and brush controls and layer locking',()=>{
+ const html=read('index.html'),app=read('app.js'),css=read('studio-theme.css');
+ for(const id of ['pixelPerfect','brushShape','colorSelectMode','colorTolerance','colorToleranceValue']){
+  assert.ok(html.includes('id="'+id+'"'),'Missing V1.8 control: '+id);
+ }
+ assert.match(html,/data-tool="lasso"/);
+ assert.match(html,/data-tool="magic"/);
+ assert.match(html,/src="professional-tools\.js"/);
+ assert.ok(html.indexOf('src="professional-tools.js"')<html.indexOf('src="app.js"'));
+ assert.match(app,/locked:l\.locked===true/);
+ assert.match(app,/function hasEditableLayer\(/);
+ assert.match(app,/function resizeSelected\(/);
+ assert.match(app,/function setMaskedSelection\(/);
+ assert.match(css,/\.layer-lock\.locked/);
+ assert.match(read('render.yaml'),/runtime:\s*static/);
 });
