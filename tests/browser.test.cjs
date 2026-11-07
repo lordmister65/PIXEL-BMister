@@ -62,6 +62,14 @@ test('V2.0 homepage, drawing, layers, autosave, export and Game Lab', {timeout:1
   assert.equal(await alphaAt(page,2,2),0,'Undo must revert the stroke');
   await page.locator('#redoBtn').click();
   assert.ok((await alphaAt(page,2,2))>0,'Redo must restore the stroke');
+  // Precise color selection and masked copy/paste must affect the intended pixels.
+  await page.locator('[data-tool="magic"]').click();
+  await drawAt(page,2,2);
+  assert.match(await page.locator('#selectionStatus').textContent(),/Seleção: 1 px/);
+  await page.locator('#copySelection').click();
+  await page.locator('#pasteSelection').click();
+  assert.ok((await alphaAt(page,3,3))>0,'Pasted selection must preserve copied pixel');
+
 
   // Locking prevents painting but doesn't discard the existing pixels.
   await page.locator('#layerList .layer-lock').first().click();
@@ -100,8 +108,23 @@ test('V2.0 homepage, drawing, layers, autosave, export and Game Lab', {timeout:1
   assert.ok(await page.locator('#gameScene').evaluate(el=>el.width===640));
   await page.keyboard.press('d');
   await page.waitForTimeout(100);
+  // Game Lab package is a real ZIP asset bundle produced in the browser.
+  const gameZipDownload=page.waitForEvent('download');
+  await page.locator('#gameExportGodot').click();
+  const zip=await gameZipDownload;
+  assert.ok(zip.suggestedFilename().endsWith('.zip'));
+  const zipBytes=fs.readFileSync(await zip.path());
+  assert.equal(zipBytes.toString('latin1',0,2),'PK');
   await page.locator('#gameClose').click();
   await page.locator('#gameModeDialog').waitFor({state:'hidden'});
+  await page.locator('#exportMenu summary').click();
+  const gifDownload=page.waitForEvent('download');
+  await page.locator('#exportGifBtn').click();
+  const gif=await gifDownload;
+  const gifBytes=fs.readFileSync(await gif.path());
+  assert.equal(gifBytes.toString('ascii',0,6),'GIF89a');
+  assert.ok(gif.suggestedFilename().endsWith('.gif'));
+
 
   await page.screenshot({path:path.join(root,'tests','studio-v2-homologation.png'),fullPage:true});
   assert.deepEqual(errors,[],'No unexpected browser console/page errors');
