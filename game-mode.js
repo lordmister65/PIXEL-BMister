@@ -34,7 +34,10 @@ const descriptions={
 };
 function createGameLab(getProject){
  const dialog=$('gameModeDialog'),canvas=$('gameScene'),ctx=canvas.getContext('2d'),keys=new Set(),touch=new Set();
- let project=null,images=[],frameTimers=0,animIndex=0,last=0,raf=0,active=false,attackUntil=0,jumpPressed=false,player={x:320,y:278,vy:0,grounded:true,facing:1},state='idle';
+ let project=null,images=[],frameTimers=0,animIndex=0,last=0,raf=0,active=false,attackUntil=0,jumpPressed=false,player=null,state='idle',camera=0;
+ const physics=window.PixelGamePhysics;
+ if(!physics)throw Error('Módulo de física do Game Lab não carregado');
+ const getLevel=()=>physics.levels[$('gameBackground').value]||physics.levels.studio;
  const mappings={idle:'gameIdle',run:'gameRun',jump:'gameJump',attack:'gameAttack'};
  const hsvBg={
   studio:{sky:'#343c57',ground:'#616c86',line:'#a1a9c2',sun:'#7787bd'},
@@ -42,18 +45,22 @@ function createGameLab(getProject){
   night:{sky:'#171c37',ground:'#323657',line:'#8f92b4',sun:'#a8adf6'}
  };
  const drawScene=()=>{
-  const width=canvas.width,height=canvas.height;
+  const width=canvas.width,height=canvas.height,level=getLevel();
   const b=hsvBg[$('gameBackground').value]||hsvBg.studio;
+  camera=physics.cameraX(player,level,width);
   ctx.clearRect(0,0,width,height);ctx.fillStyle=b.sky;ctx.fillRect(0,0,width,height);
-  ctx.fillStyle=b.sun;ctx.beginPath();ctx.arc(530,68,28,0,Math.PI*2);ctx.fill();
-  ctx.fillStyle='#fff2';for(let j=0;j<6;j++){ctx.fillRect(j*130+20,90+(j%2)*23,60,4);}
-  if($('gameBackground').value==='forest'){ctx.fillStyle='#334e51';for(let i=0;i<9;i++){const xx=i*93-12;ctx.beginPath();ctx.moveTo(xx,278);ctx.lineTo(xx+42,138+(i%3)*18);ctx.lineTo(xx+90,278);ctx.fill();}}
-  if($('gameBackground').value==='night'){ctx.fillStyle='#ececff';for(let i=0;i<24;i++)ctx.fillRect((i*103+31)%width,17+(i*41)%155,2,2);}
-  ctx.fillStyle=b.ground;ctx.fillRect(0,302,width,58);ctx.fillStyle=b.line;ctx.fillRect(0,300,width,3);
-  ctx.fillStyle='#0004';ctx.beginPath();ctx.ellipse(player.x,302,25,6,0,0,Math.PI*2);ctx.fill();
-  const image=currentImage();if(image){const scale=+$('gameScale').value||4,ww=project.width*scale,hh=project.height*scale;ctx.save();ctx.translate(Math.round(player.x),Math.round(player.y));ctx.scale(player.facing,1);ctx.imageSmoothingEnabled=false;ctx.drawImage(image,-Math.round(ww/2),-hh,ww,hh);ctx.restore();}
+  ctx.fillStyle=b.sun;ctx.beginPath();ctx.arc(530-camera*.04,68,28,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#fff2';for(let j=0;j<25;j++){const x=j*130+20-camera*.2;if(x>-70&&x<width+20)ctx.fillRect(x,90+(j%2)*23,60,4);}
+  if($('gameBackground').value==='forest'){ctx.fillStyle='#334e51';for(let i=0;i<28;i++){const xx=i*93-12-camera*.55;if(xx<width+130&&xx>-130){ctx.beginPath();ctx.moveTo(xx,310);ctx.lineTo(xx+42,138+(i%3)*18);ctx.lineTo(xx+90,310);ctx.fill();}}}
+  if($('gameBackground').value==='night'){ctx.fillStyle='#ececff';for(let i=0;i<90;i++){const x=i*103+31-camera*.08;if(x>=0&&x<width)ctx.fillRect(x,17+(i*41)%155,2,2);}}
+  for(const p of level.platforms){const x=Math.round(p.x-camera);if(x+p.w<0||x>width)continue;ctx.fillStyle=b.ground;ctx.fillRect(x,p.y,p.w,p.h);ctx.fillStyle=b.line;ctx.fillRect(x,p.y,p.w,4);ctx.fillStyle='#0002';for(let j=12;j<p.w;j+=24)ctx.fillRect(x+j,p.y+10,9,3);}
+  ctx.fillStyle='#0004';ctx.beginPath();ctx.ellipse(Math.round(player.x-camera),Math.min(335,player.y+3),20,5,0,0,Math.PI*2);ctx.fill();
+  const image=currentImage();if(image){const scale=+$('gameScale').value||4,ww=project.width*scale,hh=project.height*scale;ctx.save();ctx.translate(Math.round(player.x-camera),Math.round(player.y));ctx.scale(player.facing,1);ctx.imageSmoothingEnabled=false;ctx.drawImage(image,-Math.round(ww/2),-hh,ww,hh);ctx.restore();}
+  // Visible collision footprint so even empty sprites can be tested.
+  ctx.strokeStyle='#c4d5ff88';ctx.strokeRect(Math.round(player.x-camera-player.halfWidth)+.5,Math.round(player.y-player.height)+.5,player.halfWidth*2,player.height);
   ctx.fillStyle='#e2e8ff';ctx.font='12px Segoe UI, Arial, sans-serif';ctx.fillText('STATE  '+state.toUpperCase(),16,24);
-  ctx.fillText('A / D: mover     ESPAÇO: pular     J: atacar',16,44);
+  ctx.fillText('A/D mover · ESPAÇO pular · J atacar · câmera seguindo',16,44);
+  $('gamePositionLabel').textContent='X '+Math.round(player.x)+' · Y '+Math.round(player.y);
  };
  function currentTag(kind){const id=$(mappings[kind]).value;return project.tags.find(t=>t.id===id)||null;}
  function selectedFrames(kind){const tag=currentTag(kind);if(!tag)return project.frames.map((_,i)=>i);const out=[];for(let i=tag.start;i<=tag.end;i++)out.push(i);return out;}
@@ -63,19 +70,19 @@ function createGameLab(getProject){
   if(!active)return;
   const dt=Math.min(0.05,Math.max(0,(ts-last)/1000||0));last=ts;
   const left=keys.has('arrowleft')||keys.has('a')||touch.has('left'),right=keys.has('arrowright')||keys.has('d')||touch.has('right');
-  const direction=Number(right)-Number(left);
-  const speed=+$('gameSpeed').value||150;
-  player.x=clamp(player.x+direction*speed*dt,15,canvas.width-15);
-  if(direction)player.facing=direction;
   const jumping=keys.has(' ')||keys.has('arrowup')||keys.has('w')||jumpPressed;
-  if(jumping&&player.grounded){player.vy=-350;player.grounded=false;}
+  const move=Number(right)-Number(left);
+  // Edge-trigger jump so holding space does not automatically double jump after landing.
+  const jumpNow=jumping&&!jumpHeld;jumpHeld=jumping;
   jumpPressed=false;
-  if(!player.grounded){player.vy+=1050*dt;player.y+=player.vy*dt;if(player.y>=300){player.y=300;player.vy=0;player.grounded=true;}}
-  const next=ts<attackUntil?'attack':!player.grounded?'jump':direction?'run':'idle';updateState(next);
-  frameTimers+=dt;const fps=clamp(project.fps||8,1,24);if(frameTimers>=1/fps){animIndex=(animIndex+Math.floor(frameTimers*fps))%Math.max(1,selectedFrames(state).length);frameTimers%=1/fps;}
+  physics.tick(player,getLevel(),{left,right,jump:jumpNow},dt,{speed:+$('gameSpeed').value,gravity:+$('gameGravity').value,jump:+$('gameJumpForce').value});
+  const next=ts<attackUntil?'attack':!player.grounded?'jump':move?'run':'idle';updateState(next);
+  frameTimers+=dt;const fps=clamp(project.fps||8,1,24);
+  if(frameTimers>=1/fps){animIndex=(animIndex+Math.floor(frameTimers*fps))%Math.max(1,selectedFrames(state).length);frameTimers%=1/fps;}
   drawScene();raf=requestAnimationFrame(step);
  }
- function reset(){player={x:canvas.width/2,y:300,vy:0,grounded:true,facing:1};attackUntil=0;updateState('idle');drawScene();}
+ let jumpHeld=false;
+ function reset(){const level=getLevel();player=physics.createPlayer(level.spawn.x,level.spawn.y);player.grounded=true;jumpHeld=false;jumpPressed=false;attackUntil=0;updateState('idle');drawScene();}
  function load(){project=getProject();images=project.frames.map(p=>{const el=document.createElement('canvas');el.width=project.width;el.height=project.height;el.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(p),project.width,project.height),0,0);return el;});
   const all=[{id:'all',name:'Todos os frames',start:0,end:project.frames.length-1},...project.tags];
   for(const kind of Object.keys(mappings)){const el=$(mappings[kind]);const old=el.value;el.replaceChildren();for(const tag of all){const op=document.createElement('option');op.value=tag.id;op.textContent=tag.name+' ('+(tag.start+1)+'–'+(tag.end+1)+')';el.append(op);}const match=project.tags.find(t=>new RegExp(kind==='run'?'walk|run':kind,'i').test(t.name));el.value=all.some(x=>x.id===old)?old:match?match.id:'all';}
@@ -88,7 +95,7 @@ function createGameLab(getProject){
    const g=sheet.getContext('2d');images.forEach((img,i)=>g.drawImage(img,i*project.width,0));
    const blob=await new Promise(resolve=>sheet.toBlob(resolve,'image/png'));if(!blob)throw Error('O navegador não conseguiu gerar PNG');
    const png=new Uint8Array(await blob.arrayBuffer());
-   const metadata={format:'PIXEL-BMister Game Lab',version:1,engine,project:project.name,frameWidth:project.width,frameHeight:project.height,totalFrames:project.frames.length,layout:'horizontal',fps:project.fps,animations:project.tags.map(t=>({name:t.name,start:t.start,end:t.end,frameCount:t.end-t.start+1})),mapping:Object.fromEntries(Object.entries(mappings).map(([key,id])=>[key,$(id).value])),scale:+$('gameScale').value,movementSpeed:+$('gameSpeed').value,note:'Frames de animações são inclusivos e índices começam em 0.'};
+   const metadata={format:'PIXEL-BMister Game Lab',version:2,engine,project:project.name,frameWidth:project.width,frameHeight:project.height,totalFrames:project.frames.length,layout:'horizontal',fps:project.fps,animations:project.tags.map(t=>({name:t.name,start:t.start,end:t.end,frameCount:t.end-t.start+1})),mapping:Object.fromEntries(Object.entries(mappings).map(([key,id])=>[key,$(id).value])),scale:+$('gameScale').value,movementSpeed:+$('gameSpeed').value,gravity:+$('gameGravity').value,jumpImpulse:+$('gameJumpForce').value,previewMap:$('gameBackground').value,previewMapPlatforms:getLevel().platforms,note:'Frames de animações são inclusivos e índices começam em 0.'};
    const zip=zipEntries([{name:'spritesheet.png',bytes:png},{name:'metadata.json',bytes:JSON.stringify(metadata,null,2)},{name:'README_'+engine.toUpperCase()+'.txt',bytes:descriptions[engine]}]);
    const url=URL.createObjectURL(zip),a=document.createElement('a');a.href=url;a.download=sanitize(project.name)+'_'+engine+'_game_assets.zip';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),3000);
   }catch(e){alert('Erro ao exportar: '+e.message);}finally{btn.disabled=false;}
@@ -98,11 +105,13 @@ function createGameLab(getProject){
  const onUp=e=>keys.delete(e.key.toLowerCase());
  document.addEventListener('keydown',onDown);
  document.addEventListener('keyup',onUp);
- window.addEventListener('blur',()=>{keys.clear();touch.clear();});
+ window.addEventListener('blur',()=>{keys.clear();touch.clear();jumpHeld=false;});
  $('gameModeBtn').onclick=()=>{load();dialog.showModal();active=true;last=performance.now();raf=requestAnimationFrame(step);canvas.focus();};
  function close(){active=false;cancelAnimationFrame(raf);keys.clear();touch.clear();if(dialog.open)dialog.close();}
  $('gameClose').onclick=close;dialog.addEventListener('close',()=>{active=false;cancelAnimationFrame(raf);keys.clear();touch.clear();});
- $('gameReset').onclick=reset;$('gameRefresh').onclick=load;
+ $('gameReset').onclick=reset;$('gameRefresh').onclick=load;$('gameBackground').onchange=reset;
+ $('gameGravity').oninput=e=>$('gameGravityLabel').textContent=e.target.value;
+ $('gameJumpForce').oninput=e=>$('gameJumpForceLabel').textContent=e.target.value;
  $('gameScale').oninput=e=>$('gameScaleLabel').textContent=e.target.value+'×';
  $('gameSpeed').oninput=e=>$('gameSpeedLabel').textContent=e.target.value+' px/s';
  $('gameExportUnity').onclick=()=>exportPackage('unity');$('gameExportGodot').onclick=()=>exportPackage('godot');
