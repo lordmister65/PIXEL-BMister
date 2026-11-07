@@ -183,13 +183,13 @@ $('saveBtn').onclick=()=>{let data={format:'PIXEL-BMister',version:1,name:$('pro
 $('loadBtn').onclick=()=>$('fileInput').click();
 $('fileInput').onchange=async e=>{let file=e.target.files[0];if(!file)return;try{let d=JSON.parse(await file.text());if(d.format!=='PIXEL-BMister'||!Number.isInteger(d.width)||!Number.isInteger(d.height)||d.width<8||d.width>128||d.height<8||d.height>128||!Array.isArray(d.frames)||!d.frames.length||d.frames.length>250)throw Error('Formato ou dimensões inválidos');for(let f of d.frames){if(!Array.isArray(f.layers)||!f.layers.length||f.layers.length>100)throw Error('Camadas inválidas');for(let l of f.layers){if(!Array.isArray(l.pixels)||l.pixels.length!==d.width*d.height*4)throw Error('Pixels inválidos');}}checkpoint();stop();w=d.width;h=d.height;frames=d.frames.map(f=>({layers:f.layers.map(l=>({name:String(l.name||'Camada'),visible:l.visible!==false,opacity:clamp(Number(l.opacity??1),0,1),locked:l.locked===true,pixels:new Uint8ClampedArray(l.pixels)}))}));fi=0;li=0;$('projectName').value=d.name||'Meu projeto';$('fpsInput').value=clamp(d.fps||8,1,24);resize();render();toast('Projeto carregado');}catch(err){toast('Erro ao abrir: '+err.message);}e.target.value='';};
 $('settingsBtn').onclick=()=>$('settingsDialog').showModal();$('helpBtn').onclick=()=>$('helpDialog').showModal();
-$('newProjectBtn').onclick=()=>{let nw=+$('newWidth').value,nh=+$('newHeight').value;if(!Number.isInteger(nw)||!Number.isInteger(nh)||nw<8||nw>128||nh<8||nh>128)return toast('Dimensões de 8 a 128 pixels');if(!confirm('Criar uma tela nova? O desenho atual será substituído.'))return;checkpoint();stop();w=nw;h=nh;frames=Array.from({length:8},mkFrame);fi=0;li=1;animationTags=[];activeTag='all';refreshAnimationList();selection=null;resize();render();toast('Nova tela criada');};
+$('newProjectBtn').onclick=()=>{let nw=+$('newWidth').value,nh=+$('newHeight').value;if(!Number.isInteger(nw)||!Number.isInteger(nh)||nw<8||nw>128||nh<8||nh>128)return toast('Dimensões de 8 a 128 pixels');if(!confirm('Criar uma tela nova? O desenho atual será salvo na biblioteca antes da troca, se estiver disponível.'))return;if(window.PixelProjectManager){void window.PixelProjectManager.newBlank('Novo projeto',nw,nh);return;}checkpoint();stop();w=nw;h=nh;frames=Array.from({length:8},mkFrame);fi=0;li=1;animationTags=[];activeTag='all';refreshAnimationList();selection=null;resize();render();toast('Nova tela criada');};
 document.addEventListener('keydown',e=>{if(['INPUT','TEXTAREA'].includes(document.activeElement.tagName)||document.querySelector('dialog[open]'))return;if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){e.preventDefault();e.shiftKey?redo():undo();return;}if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='y'){e.preventDefault();redo();return;}if(e.ctrlKey||e.metaKey||e.altKey)return;let key=e.key.toLowerCase(),shortcuts={b:'pencil',e:'eraser',g:'fill',m:'select',q:'lasso',w:'magic',i:'eyedropper',l:'line',r:'rect',o:'ellipse'};if(shortcuts[key])setTool(shortcuts[key]);if(e.key==='Escape'){selection=null;overlay();}if(e.key==='Delete'||e.key==='Backspace'){if(selection){e.preventDefault();clearSelected();}}if(key==='p'){e.preventDefault();play();}});
 
 /* V1.1–V1.2: autosave, PNG import, editable selection, transforms and HSV color picker */
 const AUTOSAVE_KEY='pixel-bmister-project-v1';
 function projectData(){return{format:'PIXEL-BMister',version:3,name:$('projectName').value,width:w,height:h,fps:+$('fpsInput').value||8,selectedFrame:fi,selectedLayer:li,animationTags:animationTags.map(t=>({...t})),activeTag,frames:frames.map(f=>({layers:f.layers.map(l=>({name:l.name,visible:l.visible,opacity:l.opacity,locked:!!l.locked,pixels:Array.from(l.pixels)}))}))};}
-function scheduleSave(){if(savingBlocked)return;clearTimeout(autosaveTimer);autosaveTimer=setTimeout(()=>{try{localStorage.setItem(AUTOSAVE_KEY,JSON.stringify(projectData()));$('statusText').textContent='Salvo automaticamente';}catch(e){$('statusText').textContent='Autosave indisponível';}},1100);}
+function scheduleSave(){if(savingBlocked)return;window.PixelProjectManager?.onChanged();clearTimeout(autosaveTimer);autosaveTimer=setTimeout(()=>{try{localStorage.setItem(AUTOSAVE_KEY,JSON.stringify({...projectData(),libraryId:window.PixelProjectManager?.activeId||null}));$('statusText').textContent='Rascunho recuperável';}catch(e){$('statusText').textContent='Autosave indisponível';}},1100);}
 function recoverProject(){try{const raw=localStorage.getItem(AUTOSAVE_KEY);if(!raw)return false;const d=JSON.parse(raw);if(!validateProject(d))return false;applyProject(d);$('statusText').textContent='Projeto recuperado';return true;}catch(e){return false;}}
 function validateProject(d){return d&&d.format==='PIXEL-BMister'&&Number.isInteger(d.width)&&Number.isInteger(d.height)&&d.width>=8&&d.width<=128&&d.height>=8&&d.height<=128&&Array.isArray(d.frames)&&d.frames.length>0&&d.frames.length<=250&&d.frames.every(f=>Array.isArray(f.layers)&&f.layers.length>0&&f.layers.length<=100&&f.layers.every(l=>Array.isArray(l.pixels)&&l.pixels.length===d.width*d.height*4&&l.pixels.every(v=>Number.isInteger(v)&&v>=0&&v<=255)));}
 function applyProject(d){stop();w=d.width;h=d.height;frames=d.frames.map(f=>({layers:f.layers.map(l=>({name:String(l.name||'Camada'),visible:l.visible!==false,opacity:clamp(Number(l.opacity)||0,0,1),pixels:new Uint8ClampedArray(l.pixels)}))}));fi=clamp(d.selectedFrame||0,0,frames.length-1);li=clamp(d.selectedLayer||0,0,frame().layers.length-1);animationTags=normalizedTags(d.animationTags);activeTag=animationTags.some(t=>t.id===d.activeTag)?d.activeTag:'all';refreshAnimationList();selection=null;$('projectName').value=d.name||'Meu projeto';$('fpsInput').value=clamp(d.fps||8,1,24);resize();render();}
@@ -281,8 +281,8 @@ dragColor($('hueWheel'),e=>{if(e.target===$('svSquare')||e.target===$('svDot'))r
 dragColor($('svSquare'),adjustSV);
 $('hueWheel').addEventListener('keydown',e=>{if(e.key==='ArrowLeft'||e.key==='ArrowRight'){e.preventDefault();hue=(hue+(e.key==='ArrowRight'?1:359))%360;setColor(hsvToHex(hue,saturation,brightness));}});
 $('saveBtn').onclick=()=>{download(new Blob([JSON.stringify(projectData())],{type:'application/json'}),filename()+'.json');toast('Projeto e animações salvos em JSON');scheduleSave();};
-$('fileInput').onchange=async e=>{const file=e.target.files[0];if(!file)return;try{if(file.size>25*1024*1024)throw Error('Arquivo muito grande (máximo 25 MB)');const data=JSON.parse(await file.text());if(!validateProject(data))throw Error('Projeto JSON inválido');checkpoint('Abrir projeto');applyProject(data);toast('Projeto carregado');}catch(error){toast('Erro ao abrir: '+error.message);}e.target.value='';};
-window.addEventListener('beforeunload',()=>{clearTimeout(autosaveTimer);try{localStorage.setItem(AUTOSAVE_KEY,JSON.stringify(projectData()));}catch(e){}});
+$('fileInput').onchange=async e=>{const file=e.target.files[0];if(!file)return;try{if(file.size>25*1024*1024)throw Error('Arquivo muito grande (máximo 25 MB)');const data=JSON.parse(await file.text());if(!validateProject(data))throw Error('Projeto JSON inválido');if(window.PixelProjectManager){await window.PixelProjectManager.importDocument(data);}else{checkpoint('Abrir projeto');applyProject(data);toast('Projeto carregado');}}catch(error){toast('Erro ao abrir: '+error.message);}e.target.value='';};
+window.addEventListener('beforeunload',()=>{clearTimeout(autosaveTimer);try{localStorage.setItem(AUTOSAVE_KEY,JSON.stringify({...projectData(),libraryId:window.PixelProjectManager?.activeId||null}));}catch(e){}});
 
 
 /* V1.3 — animation management, onion skin, spritesheets and GIF */
@@ -343,6 +343,19 @@ window.PixelStudioCanvas={
     viewport.scrollTop=Math.max(0,(viewport.scrollHeight-viewport.clientHeight)/2);
   }
 };
+
+/* V1.9: project library uses the editor's own JSON validator and renderer.
+   The original localStorage recovery remains available as an independent backup. */
+if(window.PixelProjectLibrary){
+ const manager=window.PixelProjectLibrary.createManager({
+  getProject:()=>projectData(),
+  loadProject:data=>{undoStack.length=0;redoStack.length=0;applyProject(data);renderHistory();},
+  valid:data=>!!validateProject(data),
+  notice:message=>toast(message)
+ });
+ window.PixelProjectManager=manager;
+ void manager.init().catch(error=>toast('Falha ao iniciar biblioteca: '+error.message));
+}
 
 /* V1.5: expose a read-only snapshot of rendered frames to Game Lab. */
 if(window.PixelGameLab){
