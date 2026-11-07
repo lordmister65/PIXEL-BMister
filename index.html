@@ -14,12 +14,14 @@
     <div class="brand"><span class="brand-icon" aria-hidden="true">▦</span><span>PIXEL<span class="brand-accent">-BMister</span></span></div>
     <div class="project-info"><span class="project-file-icon" aria-hidden="true">◫</span><input id="projectName" aria-label="Nome do projeto" value="Meu primeiro sprite" maxlength="60"><span class="divider-v"></span><span id="dimensions">32 × 32</span><span class="divider-v"></span><span id="zoomLabel">1000%</span></div>
     <div class="top-actions">
+      <button id="homeBtn" class="btn studio-home-btn" title="Projetos e modelos">▦ Projetos</button>
       <button id="undoBtn" class="icon-btn" title="Desfazer (Ctrl+Z)" aria-label="Desfazer">↶</button>
       <button id="redoBtn" class="icon-btn" title="Refazer (Ctrl+Y)" aria-label="Refazer">↷</button>
       <span class="divider-v"></span>
       <details class="studio-menu" id="fileMenu">
         <summary class="btn" aria-label="Ações do projeto">Arquivo <span aria-hidden="true">⌄</span></summary>
         <div class="studio-menu-list">
+          <button id="saveLibraryBtn" class="studio-menu-item">◫ Salvar nos projetos recentes</button>
           <button id="saveBtn" class="studio-menu-item">▣ Salvar projeto JSON</button>
           <button id="loadBtn" class="studio-menu-item">◫ Abrir projeto</button>
           <button id="importPngBtn" class="studio-menu-item" title="Importar imagem PNG como camada">＋ Importar PNG</button>
@@ -118,7 +120,42 @@
     </div>
   </section>
 </dialog>
+<dialog id="projectHome" class="project-home" aria-label="Central de projetos PIXEL-BMister">
+  <section class="project-home-shell">
+    <header class="project-home-header">
+      <div><div class="project-home-eyebrow">PIXEL-BMister · STUDIO</div><h2>Seu espaço de criação</h2><p>Abra um projeto recente ou comece com um modelo. Tudo é salvo neste navegador.</p></div>
+      <button id="projectHomeClose" class="mini-btn" title="Voltar ao editor" aria-label="Fechar central de projetos">✕</button>
+    </header>
+    <div class="project-home-content">
+      <div class="project-home-actions">
+        <button id="resumeSessionBtn" class="project-feature-card"><span class="project-feature-icon">↶</span><span><strong>Continuar sessão</strong><small>Retomar o rascunho recuperado automaticamente</small></span></button>
+        <button id="newBlankBtn" class="project-feature-card"><span class="project-feature-icon">＋</span><span><strong>Projeto em branco</strong><small>Escolher dimensões para começar</small></span></button>
+        <button id="importProjectHomeBtn" class="project-feature-card"><span class="project-feature-icon">⇧</span><span><strong>Abrir arquivo JSON</strong><small>Importar um projeto salvo no computador</small></span></button>
+      </div>
+      <div class="project-home-section-title"><h3>Modelos para começar</h3><span>Sprites · Animações · Tilesets</span></div>
+      <div class="project-template-grid">
+        <button class="project-template-card" data-template="sprite16"><span class="template-art template-sprite">▦</span><strong>Sprite básico</strong><small>16 × 16 px</small></button>
+        <button class="project-template-card" data-template="character32"><span class="template-art template-character">◈</span><strong>Personagem</strong><small>32 × 32 px</small></button>
+        <button class="project-template-card" data-template="tileset64"><span class="template-art template-tileset">▥</span><strong>Tileset</strong><small>64 × 64 px</small></button>
+        <button class="project-template-card" data-template="animation32"><span class="template-art template-animation">▷</span><strong>Animação</strong><small>32 × 32 · 8 frames</small></button>
+      </div>
+      <div class="project-home-section-title"><h3>Projetos recentes <span id="recentCount">(0)</span></h3><button id="refreshProjectsBtn" class="subtle-btn">Atualizar</button></div>
+      <div id="recentProjectsList" class="recent-project-grid" aria-live="polite"></div>
+      <p class="project-home-note">Os projetos ficam armazenados neste navegador. Para garantir uma cópia independente, use Arquivo → Salvar projeto JSON.</p>
+    </div>
+  </section>
+</dialog>
+<dialog id="blankProjectDialog" class="project-new-dialog" aria-label="Criar projeto em branco">
+  <form method="dialog" class="dialog-body">
+    <div class="dialog-head"><h2>Novo projeto</h2><button value="cancel" class="mini-btn" aria-label="Fechar">✕</button></div>
+    <label>Nome<input id="blankProjectName" type="text" maxlength="60" value="Novo projeto"></label>
+    <label>Largura (8–128)<input id="blankProjectWidth" type="number" min="8" max="128" value="32"></label>
+    <label>Altura (8–128)<input id="blankProjectHeight" type="number" min="8" max="128" value="32"></label>
+    <div class="dialog-actions"><button value="cancel" class="btn">Cancelar</button><button id="confirmBlankProject" value="cancel" class="btn primary">Criar projeto</button></div>
+  </form>
+</dialog>
 <div id="toast" role="status" aria-live="polite"></div>
+<script src="project-manager.js"></script>
 <script src="professional-tools.js"></script>
 <script src="gif-export.js"></script><script src="game-physics.js"></script>
 <script src="game-mode.js"></script><script src="app.js"></script><script src="studio-ui.js"></script>
