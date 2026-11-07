@@ -313,3 +313,13 @@ dialog{background:#29292e;border-color:#595660;color:#eeeaf0}
 
 /* Keep dropdown actions available at mobile breakpoints despite legacy toolbar hiding rules. */
 .top-actions .studio-menu .studio-menu-item{display:block!important;width:100%;padding:11px 10px!important;text-align:left;font-size:12px!important;white-space:nowrap}
+
+/* Keep essential workspace/game controls usable at small widths. */
+@media(max-width:720px){
+  .top-actions #focusModeBtn{display:grid!important;place-items:center}
+}
+@media(max-width:440px){
+  .top-actions #gameModeBtn{display:grid!important;place-items:center;font-size:0!important;min-width:29px;padding:6px}
+  .top-actions #gameModeBtn::before{content:"▷";font-size:16px}
+  .top-actions #focusModeBtn{min-width:29px}
+}
