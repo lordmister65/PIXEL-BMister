@@ -163,8 +163,8 @@ $('deleteLayer').onclick=()=>{if(frame().layers.length===1)return toast('É nece
 let opacityEditing=false;$('opacityInput').addEventListener('pointerdown',()=>{if(layer().locked)return;checkpoint('Opacidade da camada');opacityEditing=true;});
 $('opacityInput').oninput=e=>{if(layer().locked){toast('Camada bloqueada');return;}if(!opacityEditing){checkpoint('Opacidade da camada');opacityEditing=true;}layer().opacity=+e.target.value/100;$('opacityValue').textContent=e.target.value+'%';redraw();renderFrames();};$('opacityInput').onchange=()=>{opacityEditing=false;scheduleSave();};
 function renderFrames(){let holder=$('frameStrip');holder.replaceChildren();const tag=currentTag();frames.forEach((f,i)=>{let b=document.createElement('button');b.className='frame-card'+(i===fi?' selected':'')+(tag?(i>=tag.start&&i<=tag.end?' tagged':' outside-tag'):'');b.setAttribute('aria-label','Frame '+(i+1));let n=document.createElement('span');n.className='frame-number';n.textContent=String(i+1).padStart(2,'0');let thumb=document.createElement('canvas');thumb.width=w;thumb.height=h;put(thumb.getContext('2d'),composite(f));b.append(n,thumb);b.onclick=()=>setFrame(i);holder.append(b);});let plus=document.createElement('button');plus.className='add-frame';plus.textContent='+';plus.title='Adicionar frame';plus.onclick=()=>{checkpoint();frames.splice(fi+1,0,mkFrame());fi++;li=0;render();};holder.append(plus);$('frameIndicator').textContent=String(fi+1).padStart(2,'0')+' / '+String(frames.length).padStart(2,'0');$('frameCount').textContent=frames.length+' frames';}
-function render(){redraw();renderLayers();renderFrames();renderHistory();scheduleSave();}
-function setFrame(i){const old=fi;fi=(i+frames.length)%frames.length;li=clamp(li,0,frame().layers.length-1);selection=null;if(playing){redraw();renderLayers();const cards=$('frameStrip').querySelectorAll('.frame-card');if(cards[old])cards[old].classList.remove('selected');if(cards[fi])cards[fi].classList.add('selected');$('frameIndicator').textContent=String(fi+1).padStart(2,'0')+' / '+String(frames.length).padStart(2,'0');}else render();}
+function render(save=true){redraw();renderLayers();renderFrames();renderHistory();if(save)scheduleSave();}
+function setFrame(i){const old=fi;fi=(i+frames.length)%frames.length;li=clamp(li,0,frame().layers.length-1);selection=null;if(playing){redraw();renderLayers();const cards=$('frameStrip').querySelectorAll('.frame-card');if(cards[old])cards[old].classList.remove('selected');if(cards[fi])cards[fi].classList.add('selected');$('frameIndicator').textContent=String(fi+1).padStart(2,'0')+' / '+String(frames.length).padStart(2,'0');}else render(false);}
 $('duplicateFrame').onclick=()=>{checkpoint('Duplicar frame');frames.splice(fi+1,0,copyFrames([frame()])[0]);fi++;render();toast('Frame duplicado');};
 $('deleteFrame').onclick=()=>{if(frames.length<=1)return toast('É necessário pelo menos um frame');checkpoint();frames.splice(fi,1);fi=clamp(fi,0,frames.length-1);li=clamp(li,0,frame().layers.length-1);render();};
 $('prevFrame').onclick=()=>setFrame(fi-1);$('nextFrame').onclick=()=>setFrame(fi+1);
@@ -188,10 +188,42 @@ document.addEventListener('keydown',e=>{if(['INPUT','TEXTAREA'].includes(documen
 
 /* V1.1–V1.2: autosave, PNG import, editable selection, transforms and HSV color picker */
 const AUTOSAVE_KEY='pixel-bmister-project-v1';
+let saveStatus='ready';
 function projectData(){return{format:'PIXEL-BMister',version:3,name:$('projectName').value,width:w,height:h,fps:+$('fpsInput').value||8,selectedFrame:fi,selectedLayer:li,animationTags:animationTags.map(t=>({...t})),activeTag,frames:frames.map(f=>({layers:f.layers.map(l=>({name:l.name,visible:l.visible,opacity:l.opacity,locked:!!l.locked,pixels:Array.from(l.pixels)}))}))};}
-function scheduleSave(){if(savingBlocked)return;window.PixelProjectManager?.onChanged();clearTimeout(autosaveTimer);autosaveTimer=setTimeout(()=>{try{localStorage.setItem(AUTOSAVE_KEY,JSON.stringify({...projectData(),libraryId:window.PixelProjectManager?.activeId||null}));$('statusText').textContent='Rascunho recuperável';}catch(e){$('statusText').textContent='Autosave indisponível';}},1100);}
-function recoverProject(){try{const raw=localStorage.getItem(AUTOSAVE_KEY);if(!raw)return false;const d=JSON.parse(raw);if(!validateProject(d))return false;applyProject(d);$('statusText').textContent='Projeto recuperado';return true;}catch(e){return false;}}
-function validateProject(d){return d&&d.format==='PIXEL-BMister'&&Number.isInteger(d.width)&&Number.isInteger(d.height)&&d.width>=8&&d.width<=128&&d.height>=8&&d.height<=128&&Array.isArray(d.frames)&&d.frames.length>0&&d.frames.length<=250&&d.frames.every(f=>Array.isArray(f.layers)&&f.layers.length>0&&f.layers.length<=100&&f.layers.every(l=>Array.isArray(l.pixels)&&l.pixels.length===d.width*d.height*4&&l.pixels.every(v=>Number.isInteger(v)&&v>=0&&v<=255)));}
+function scheduleSave(){
+ if(savingBlocked)return;
+ window.PixelProjectManager?.onChanged();
+ clearTimeout(autosaveTimer);
+ saveStatus='dirty';
+ $('statusText').textContent='Alterações pendentes…';
+ autosaveTimer=setTimeout(()=>{
+  try{
+   const doc={...projectData(),libraryId:window.PixelProjectManager?.activeId||null};
+   localStorage.setItem(AUTOSAVE_KEY,JSON.stringify(doc));
+   saveStatus='saved';
+   $('statusText').textContent='Rascunho salvo neste navegador';
+  }catch(error){
+   saveStatus='error';
+   $('statusText').textContent='Falha no autosave — exporte JSON';
+   toast('Armazenamento cheio ou bloqueado. Salve o arquivo JSON.');
+  }
+ },1100);
+}
+function recoverProject(){try{const raw=localStorage.getItem(AUTOSAVE_KEY);if(!raw)return false;const d=JSON.parse(raw);if(!validateProject(d))return false;applyProject(d);$('statusText').textContent='Projeto recuperado';saveStatus='saved';return true;}catch(e){return false;}}
+function validateProject(d){
+ if(!d||d.format!=='PIXEL-BMister'||!Number.isInteger(d.width)||!Number.isInteger(d.height)||d.width<8||d.width>128||d.height<8||d.height>128||!Array.isArray(d.frames)||d.frames.length<1||d.frames.length>250)return false;
+ if(d.animationTags!==undefined&&!Array.isArray(d.animationTags))return false;
+ if(d.animationTags?.length>40)return false;
+ for(const f of d.frames){
+  if(!f||!Array.isArray(f.layers)||f.layers.length<1||f.layers.length>100)return false;
+  for(const l of f.layers){
+   if(!l||!Array.isArray(l.pixels)||l.pixels.length!==d.width*d.height*4)return false;
+   if(l.opacity!==undefined&&(!Number.isFinite(l.opacity)||l.opacity<0||l.opacity>1))return false;
+   for(let j=0;j<l.pixels.length;j++)if(!Number.isInteger(l.pixels[j])||l.pixels[j]<0||l.pixels[j]>255)return false;
+  }
+ }
+ return true;
+}
 function applyProject(d){stop();w=d.width;h=d.height;frames=d.frames.map(f=>({layers:f.layers.map(l=>({name:String(l.name||'Camada'),visible:l.visible!==false,opacity:clamp(Number(l.opacity??1),0,1),locked:l.locked===true,pixels:new Uint8ClampedArray(l.pixels)}))}));fi=clamp(d.selectedFrame||0,0,frames.length-1);li=clamp(d.selectedLayer||0,0,frame().layers.length-1);animationTags=normalizedTags(d.animationTags);activeTag=animationTags.some(t=>t.id===d.activeTag)?d.activeTag:'all';refreshAnimationList();selection=null;$('projectName').value=d.name||'Meu projeto';$('fpsInput').value=clamp(d.fps||8,1,24);resize();render();}
 function selectedPixels(){
  const r=region();if(!r)return null;
@@ -282,7 +314,11 @@ dragColor($('svSquare'),adjustSV);
 $('hueWheel').addEventListener('keydown',e=>{if(e.key==='ArrowLeft'||e.key==='ArrowRight'){e.preventDefault();hue=(hue+(e.key==='ArrowRight'?1:359))%360;setColor(hsvToHex(hue,saturation,brightness));}});
 $('saveBtn').onclick=()=>{download(new Blob([JSON.stringify(projectData())],{type:'application/json'}),filename()+'.json');toast('Projeto e animações salvos em JSON');scheduleSave();};
 $('fileInput').onchange=async e=>{const file=e.target.files[0];if(!file)return;try{if(file.size>25*1024*1024)throw Error('Arquivo muito grande (máximo 25 MB)');const data=JSON.parse(await file.text());if(!validateProject(data))throw Error('Projeto JSON inválido');if(window.PixelProjectManager){await window.PixelProjectManager.importDocument(data);}else{checkpoint('Abrir projeto');applyProject(data);toast('Projeto carregado');}}catch(error){toast('Erro ao abrir: '+error.message);}e.target.value='';};
-window.addEventListener('beforeunload',()=>{clearTimeout(autosaveTimer);try{localStorage.setItem(AUTOSAVE_KEY,JSON.stringify({...projectData(),libraryId:window.PixelProjectManager?.activeId||null}));}catch(e){}});
+window.addEventListener('beforeunload',()=>{
+ if(saveStatus==='saved')return;
+ clearTimeout(autosaveTimer);
+ try{localStorage.setItem(AUTOSAVE_KEY,JSON.stringify({...projectData(),libraryId:window.PixelProjectManager?.activeId||null}));}catch(_error){}
+});
 
 
 /* V1.3 — animation management, onion skin, spritesheets and GIF */
