@@ -84,3 +84,8 @@
 .game-touch-controls button:active{background:#6273ad}
 @media(max-width:850px){.game-mode-body{grid-template-columns:1fr}.game-properties{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.game-properties h3,.game-export-actions,.game-hint{grid-column:1/-1}}
 @media(max-width:610px){.game-mode-header{padding:14px}.game-mode-header h2{font-size:17px}.game-mode-body{padding:10px}.game-properties{grid-template-columns:1fr}.game-mode-launch{font-size:10px;padding:7px 6px}.game-instructions{font-size:10px}}
+
+/* Game Lab V1.6 — scrolling platform physics */
+.game-position{font-size:11px;color:#9faccd;font-variant-numeric:tabular-nums;white-space:nowrap}
+#gameScene{image-rendering:pixelated;image-rendering:crisp-edges}
+@media(max-width:540px){.game-position{display:none}.game-scene-toolbar{gap:5px}}
