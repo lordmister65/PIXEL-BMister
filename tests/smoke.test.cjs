@@ -11,6 +11,7 @@ const read=name=>fs.readFileSync(path.join(root,name),'utf8');
 test('main JS parses without syntax errors',()=>{
   assert.doesNotThrow(()=>new vm.Script(read('app.js')));
   assert.doesNotThrow(()=>new vm.Script(read('gif-export.js')));
+  assert.doesNotThrow(()=>new vm.Script(read('game-mode.js')));
 });
 
 test('every statically referenced DOM ID exists',()=>{
@@ -54,4 +55,24 @@ test('all code assets are relative local files for static hosting',()=>{
  assert.match(html,/src="app\.js"/);
  assert.match(html,/src="gif-export\.js"/);
  assert.match(html,/href="style\.css"/);
+});
+
+
+test('game lab has all required dialog controls',()=>{
+ const html=read('index.html');
+ for(const id of ['gameModeBtn','gameModeDialog','gameScene','gameIdle','gameRun','gameJump','gameAttack','gameExportUnity','gameExportGodot','gameRefresh','gameScale','gameSpeed']){
+   assert.ok(html.includes('id="'+id+'"'),'Missing game mode control: '+id);
+ }
+ assert.match(html,/src="game-mode\.js"/);
+});
+test('ZIP exporter produces local ZIP headers and two entries',()=>{
+ class BlobShim {constructor(parts,options){this.parts=parts;this.type=options.type;}}
+ const window={};
+ vm.runInNewContext(read('game-mode.js'),{window,TextEncoder,Uint8Array,Uint32Array,Blob:BlobShim,Math,Set,Error});
+ const archive=window.PixelGameLab.zipEntries([{name:'a.txt',bytes:'hello'},{name:'b.txt',bytes:'world'}]);
+ assert.equal(archive.type,'application/zip');
+ assert.equal(archive.parts[0][0],0x50);
+ assert.equal(archive.parts[0][1],0x4b);
+ assert.equal(archive.parts.at(-1)[0],0x50);
+ assert.equal(archive.parts.at(-1)[1],0x4b);
 });
