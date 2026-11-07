@@ -323,3 +323,18 @@ dialog{background:#29292e;border-color:#595660;color:#eeeaf0}
   .top-actions #gameModeBtn::before{content:"▷";font-size:16px}
   .top-actions #focusModeBtn{min-width:29px}
 }
+
+/* V1.8 — quiet professional controls on graphite */
+.tool[data-tool="lasso"],.tool[data-tool="magic"]{color:#bcb8c7}
+.tool[data-tool="lasso"].active,.tool[data-tool="magic"].active{color:#fff;background:#565264;border-color:#767084}
+.property-options .pro-setting{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:7px;margin:3px 0}
+.property-options .pro-setting select{background:#26262b;color:#eae7ef;border:1px solid #55525d;border-radius:5px;padding:6px 8px;max-width:140px}
+.property-options .pro-setting input[type=range]{width:100%;accent-color:#aaa2b8}
+.property-options .pro-setting span{margin-left:auto;font-variant-numeric:tabular-nums;color:#c1baca}
+.property-options input[type=checkbox]{accent-color:#9f99ad}
+.layer-lock{flex:0 0 26px;height:26px;display:grid;place-items:center;border:1px solid transparent;border-radius:5px;background:transparent;color:#8c8994;cursor:pointer;font-size:16px}
+.layer-lock:hover,.layer-lock:focus-visible{color:#f3eff8;background:#4c4856;border-color:#726c80;outline:none}
+.layer-lock.locked{color:#d4cddd;background:#504b59}
+.layer-item:has(.layer-lock.locked) .layer-chip{filter:grayscale(.6);opacity:.7}
+.layer-item .layer-name{min-width:0}
+@media(max-width:720px){.property-options .pro-setting select{max-width:60%}}
