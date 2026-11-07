@@ -35,6 +35,18 @@ Alternativamente, escolha **New > Static Site**, selecione o repositório, use *
 
 Não há necessidade de Node.js, banco de dados ou variáveis de ambiente. A publicação acompanha novos commits na branch `main`.
 
+## Novo visual — Studio Graphite (referência minimalista escura)
+
+A interface usa um novo tema inspirado na segunda referência escolhida: fundos pretos/grafite, painéis cinza carvão, acentos lilás acinzentado discretos e ausência de brilhos neon. O design é carregado a partir de `studio-theme.css` após o CSS base e `studio-ui.js` adiciona navegação por âncoras nos painéis do inspetor.
+
+- Editor central escuro com fundo de transparência quadriculado e grade discreta.
+- Barra de ferramentas compacta, cabeçalho limpo e controles de exportação preservados.
+- Timeline, camadas, paleta e histórico com elementos neutros e estados ativos discretos.
+- Painel direito com navegação visual para Propriedades, Paleta e Histórico.
+- O Game Lab, as animações e as exportações permanecem disponíveis; nenhuma alteração no formato JSON foi necessária.
+- `render.yaml` permanece configurado como Static Site. Não há backend ou dependências adicionais.
+- Consulte `node --test tests/smoke.test.cjs` para os testes de integração básicos.
+
 ## V1.6 — Física, colisão e câmera no Game Lab
 
 - Três mapas maiores com plataformas sólidas: Estúdio, Floresta e Noturno.
