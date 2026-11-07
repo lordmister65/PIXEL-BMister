@@ -35,6 +35,39 @@ Alternativamente, escolha **New > Static Site**, selecione o repositório, use *
 
 Não há necessidade de Node.js, banco de dados ou variáveis de ambiente. A publicação acompanha novos commits na branch `main`.
 
+## V2.0 — Otimização e Qualidade
+
+Esta versão fortalece o editor sem alterar sua identidade visual **Studio Graphite** ou sua implantação estática no Render.
+
+### Melhorias de desempenho
+
+- A mudança de frame não refaz todas as miniaturas da timeline nem serializa todo o desenho em cada clique.
+- O estado do projeto só entra na fila do autosave após alterações editáveis; navegar pelos frames não dispara a gravação completa.
+- A biblioteca de projetos recentes limita a renderização imediata a 40 miniaturas, reduzindo travamentos com muitas criações.
+- O IndexedDB agora usa uma fila sequencial de gravações para impedir que snapshots antigos sobrescrevam versões recentes.
+
+### Confiabilidade e recuperação
+
+- O editor exibe **alterações pendentes**, **rascunho salvo** e **falha no autosave** na barra de status.
+- Importações JSON rejeitam dimensões inválidas, pixels fora de 0–255, camadas e frames excessivos e opacidade inválida.
+- O fluxo de troca de projeto aguarda a conclusão da última gravação antes de abrir outro trabalho.
+- A recuperação local permanece compatível com arquivos de projeto anteriores e camadas bloqueadas.
+- **Cuidado:** o navegador pode limitar o armazenamento (especialmente em projetos grandes). Exporte regularmente o JSON como backup independente.
+
+### Acessibilidade e usabilidade
+
+- Atalho de teclado para ir direto à área do canvas, além de regiões e mensagens com etiquetas para leitores de tela.
+- Estado do frame ativo exposto pelos atributos acessíveis dos botões da timeline.
+- Estilos de foco visíveis e ajustes para alto contraste e preferência de movimento reduzido.
+- Espaço + arrastar continua movimentando o canvas, mas a tecla Espaço também ativa normalmente botões quando estes estão em foco.
+- Toda a experiência continua baseada em HTML/CSS/JavaScript puro.
+
+### Verificação e publicação
+
+- Execute a suíte automatizada: `node --test tests/smoke.test.cjs`. O GitHub Actions também executa esses testes na branch main.
+- O arquivo `render.yaml` não foi alterado; o serviço continua do tipo **Static Site**, sem Node.js no ambiente de produção.
+- A suíte automatizada não substitui testes manuais de desenho com mouse/toque, carregamento de projetos grandes, GIF ou renderização visual em navegadores diferentes.
+
 ## V1.9 — Gerenciamento de Projetos (Studio Graphite)
 
 A central de projetos aparece na abertura do editor e pode ser acessada pelo botão **Projetos** na barra superior.
