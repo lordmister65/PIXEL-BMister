@@ -35,6 +35,21 @@ Alternativamente, escolha **New > Static Site**, selecione o repositório, use *
 
 Não há necessidade de Node.js, banco de dados ou variáveis de ambiente. A publicação acompanha novos commits na branch `main`.
 
+## V1.9 — Gerenciamento de Projetos (Studio Graphite)
+
+A central de projetos aparece na abertura do editor e pode ser acessada pelo botão **Projetos** na barra superior.
+
+- **Projetos recentes**: biblioteca local baseada em IndexedDB, com prévia, nome, dimensões, quantidade de frames, data da última edição, duplicação, abertura e exclusão com confirmação.
+- **Modelos prontos**: Sprite básico (16×16), Personagem (32×32), Tileset (64×64) e Animação (32×32 com 8 frames e tags Idle/Run). Cada modelo contém uma pequena arte inicial editável.
+- **Novo projeto**: crie uma tela em branco com nome e dimensões personalizadas de 8 a 128 pixels.
+- **Recuperação de sessão**: o autosave já existente em localStorage é preservado. O editor associa o rascunho ao projeto ativo e protege alterações recuperadas antes de trocar de trabalho.
+- **Salvamento automático na biblioteca**: após um projeto estar associado à biblioteca, as edições são gravadas em IndexedDB com debounce. O botão **Arquivo → Salvar nos projetos recentes** permite registrar manualmente um rascunho.
+- **Importar JSON**: cria uma nova entrada na biblioteca, sem sobrescrever o projeto anterior. Os projetos JSON v1/v2/v3 continuam compatíveis.
+- **Proteção de rascunhos**: ao trocar de projeto, o editor tenta salvar o trabalho atual; rascunhos desenhados ainda sem entrada na biblioteca são preservados automaticamente.
+- **Backup independente**: **Arquivo → Salvar projeto JSON** continua disponível e é recomendado, especialmente antes de limpar dados do navegador.
+- **Sem contas nem nuvem**: a biblioteca é exclusiva deste navegador/perfil. Limpar os dados do site pode apagá-la. O Render continua com a mesma configuração `render.yaml`, sem banco de dados ou servidor adicional.
+- **Testes**: `node --test tests/smoke.test.cjs` verifica modelos, integração da tela inicial, salvamento local e compatibilidade com Render; o GitHub Actions executa a suíte automaticamente.
+
 ## V1.8 — Ferramentas profissionais
 
 Novidades de edição no **Studio Graphite**, sem frameworks ou backend:
