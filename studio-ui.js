@@ -97,7 +97,7 @@
  });
 
  let spaceHeld=false,pan=null;
- const targetIsText=el=>el&&(['INPUT','TEXTAREA','SELECT'].includes(el.tagName)||el.isContentEditable);
+ const targetIsText=el=>el&&(['INPUT','TEXTAREA','SELECT','BUTTON','SUMMARY','A'].includes(el.tagName)||el.isContentEditable||!!el.closest?.('button,a,summary,[role="button"]'));
  document.addEventListener('keydown',event=>{
    if(document.querySelector('dialog[open]')||targetIsText(event.target))return;
    if(event.code==='Space'&&!event.ctrlKey&&!event.altKey&&!event.metaKey){
