@@ -35,6 +35,21 @@ Alternativamente, escolha **New > Static Site**, selecione o repositório, use *
 
 Não há necessidade de Node.js, banco de dados ou variáveis de ambiente. A publicação acompanha novos commits na branch `main`.
 
+## V1.7 — Studio UX: produtividade e navegação
+
+A interface Studio Graphite recebeu melhorias de experiência sem remover as funções anteriores:
+
+- **Cabeçalho simplificado**: menus `Arquivo` (Salvar JSON, Abrir JSON, Importar PNG) e `Exportar` (PNG, Spritesheet, GIF). Game Lab permanece em um botão separado.
+- **Painéis recolhíveis**: ocultar a barra de ferramentas no botão ☰; ocultar o inspetor na seta superior ou no ícone ▤ junto aos controles do canvas. O botão ▤ continua disponível para restaurar o painel.
+- **Painel ajustável**: arraste a divisória entre o canvas e o inspetor para larguras de 220 a 480 px (desktop). Também é possível ajustar com as setas esquerda/direita quando a divisória recebe foco.
+- **Modo sem distrações**: clique no ícone ⛶ no cabeçalho ou pressione **Shift+D** para ocultar timeline, ferramentas e inspetor. Pressione **Esc** ou o ícone novamente para sair. **Tab** continua reservado à navegação acessível.
+- **Navegação no canvas**: use **Espaço + arrastar** ou o **botão do meio** do mouse para mover a área de desenho; **roda do mouse** para zoom de 200% a 4000%; botão ◎ para centralizar e ⤢ para ajustar à janela.
+- **Responsividade**: menus e controles essenciais acessíveis também em telas pequenas.
+- **Compatibilidade**: os dados do projeto e o autosave continuam no mesmo formato. O modo de desenho e a exportação Unity/Godot não foram modificados.
+- **Render**: site estático sem alteração de `render.yaml`. Arquivos adicionais usam apenas HTML, CSS e JavaScript locais.
+
+Os novos testes de fumaça verificam referências de controles, menus, painéis e a preservação do deploy estático. A qualidade visual e o comportamento dos ponteiros ainda devem ser conferidos num navegador real.
+
 ## Novo visual — Studio Graphite (referência minimalista escura)
 
 A interface usa um novo tema inspirado na segunda referência escolhida: fundos pretos/grafite, painéis cinza carvão, acentos lilás acinzentado discretos e ausência de brilhos neon. O design é carregado a partir de `studio-theme.css` após o CSS base e `studio-ui.js` adiciona navegação por âncoras nos painéis do inspetor.
