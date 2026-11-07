@@ -17,10 +17,25 @@
       <button id="undoBtn" class="icon-btn" title="Desfazer (Ctrl+Z)" aria-label="Desfazer">↶</button>
       <button id="redoBtn" class="icon-btn" title="Refazer (Ctrl+Y)" aria-label="Refazer">↷</button>
       <span class="divider-v"></span>
-      <button id="saveBtn" class="btn"><span>▣</span> Salvar</button>
-      <button id="loadBtn" class="btn">Abrir</button><button id="importPngBtn" class="btn" title="Importar imagem PNG como camada">Importar PNG</button>
-      <button id="exportBtn" class="btn primary"><span>⇩</span> Exportar PNG</button><button id="exportSheetBtn" class="btn" title="Exportar spritesheet PNG">Spritesheet</button><button id="exportGifBtn" class="btn" title="Exportar GIF animado">GIF</button>
-      <button id="gameModeBtn" class="btn game-mode-launch" title="Abrir o modo desenvolvedor de jogos">▷ Game Lab</button><button id="settingsBtn" class="icon-btn" title="Configurações" aria-label="Configurações">⚙</button>
+      <details class="studio-menu" id="fileMenu">
+        <summary class="btn" aria-label="Ações do projeto">Arquivo <span aria-hidden="true">⌄</span></summary>
+        <div class="studio-menu-list">
+          <button id="saveBtn" class="studio-menu-item">▣ Salvar projeto JSON</button>
+          <button id="loadBtn" class="studio-menu-item">◫ Abrir projeto</button>
+          <button id="importPngBtn" class="studio-menu-item" title="Importar imagem PNG como camada">＋ Importar PNG</button>
+        </div>
+      </details>
+      <details class="studio-menu" id="exportMenu">
+        <summary class="btn primary" aria-label="Opções de exportação">Exportar <span aria-hidden="true">⌄</span></summary>
+        <div class="studio-menu-list">
+          <button id="exportBtn" class="studio-menu-item">⇩ Exportar PNG</button>
+          <button id="exportSheetBtn" class="studio-menu-item">▦ Spritesheet</button>
+          <button id="exportGifBtn" class="studio-menu-item">▷ GIF animado</button>
+        </div>
+      </details>
+      <button id="gameModeBtn" class="btn game-mode-launch" title="Abrir modo desenvolvedor">▷ Game Lab</button>
+      <button id="focusModeBtn" class="icon-btn" title="Modo sem distrações (Tab)" aria-label="Alternar modo sem distrações" aria-pressed="false">⛶</button>
+      <button id="settingsBtn" class="icon-btn" title="Configurações" aria-label="Configurações">⚙</button>
     </div>
   </header>
   <div class="workspace">
@@ -37,7 +52,7 @@
       <div class="tools-bottom"><button id="gridBtn" class="tool active" title="Mostrar/ocultar grade" aria-label="Grade">▦</button><button id="checkerBtn" class="tool active" title="Mostrar/ocultar fundo quadriculado" aria-label="Fundo quadriculado">▤</button><button id="helpBtn" class="tool" title="Atalhos" aria-label="Ajuda">?</button></div>
     </aside>
     <main class="editor">
-      <div class="canvas-header"><span class="eyebrow"><span class="online-dot"></span> ÁREA DE DESENHO</span><span id="statusText">Pronto para criar</span><div class="canvas-toolbar"><button id="zoomOut" class="mini-btn" aria-label="Diminuir zoom">−</button><span id="zoomMini">1000%</span><button id="zoomIn" class="mini-btn" aria-label="Aumentar zoom">+</button><button id="fitBtn" class="mini-btn" title="Ajustar à tela">⤢</button></div></div>
+      <div class="canvas-header"><button id="toggleToolsBtn" class="mini-btn studio-panel-toggle" title="Mostrar/ocultar ferramentas" aria-label="Mostrar ou ocultar ferramentas" aria-pressed="true">☰</button><span class="eyebrow"><span class="online-dot"></span> ÁREA DE DESENHO</span><span id="statusText">Pronto para criar</span><div class="canvas-toolbar"><button id="zoomOut" class="mini-btn" aria-label="Diminuir zoom">−</button><span id="zoomMini">1000%</span><button id="zoomIn" class="mini-btn" aria-label="Aumentar zoom">+</button><button id="fitBtn" class="mini-btn" title="Ajustar à tela">⤢</button><button id="centerCanvasBtn" class="mini-btn" title="Centralizar desenho" aria-label="Centralizar canvas">◎</button></div></div>
       <div id="canvasViewport" class="canvas-viewport">
         <div class="canvas-shadow"><div class="canvas-stack"><canvas id="onionCanvas" width="32" height="32" aria-hidden="true"></canvas><canvas id="artCanvas" width="32" height="32" aria-label="Área de desenho em pixel art"></canvas><canvas id="gridCanvas" width="32" height="32" aria-hidden="true"></canvas><canvas id="overlayCanvas" width="32" height="32" aria-hidden="true"></canvas></div></div>
       </div>
@@ -48,7 +63,9 @@
         <div class="animation-controls"><label class="switch-label" title="Mostrar frames vizinhos sem alterar o desenho"><input id="onionToggle" type="checkbox"> Onion Skin</label><label class="switch-label">Anterior <input id="onionPrev" type="number" min="0" max="4" value="1"></label><label class="switch-label">Próximo <input id="onionNext" type="number" min="0" max="4" value="1"></label><label class="switch-label">Opacidade <input id="onionOpacity" type="range" min="10" max="60" value="30"></label><span class="control-separator"></span><label class="switch-label">Animação <select id="animationSelect" aria-label="Animação ativa"><option value="all">Todos os frames</option></select></label><button id="addAnimation" class="mini-btn" title="Criar animação com intervalo de frames">+</button><button id="editAnimation" class="mini-btn" title="Editar animação selecionada">✎</button><button id="deleteAnimation" class="mini-btn" title="Excluir animação selecionada">−</button><label class="switch-label">Loop <input id="loopToggle" type="checkbox" checked></label></div><div class="timeline-foot"><span>FRAME <strong id="frameIndicator">01 / 08</strong></span><div><button id="duplicateFrame" class="subtle-btn">⧉ Duplicar</button><button id="deleteFrame" class="subtle-btn danger">✕ Excluir</button></div></div>
       </section>
     </main>
+    <div id="inspectorResizer" class="inspector-resizer" role="separator" aria-label="Ajustar largura do painel direito" aria-orientation="vertical" tabindex="0" aria-valuemin="220" aria-valuemax="480" aria-valuenow="284"></div>
     <aside class="inspector">
+      <div class="inspector-toggle-row"><span>INSPECTOR</span><button id="toggleInspectorBtn" class="mini-btn" title="Recolher painel direito" aria-label="Mostrar ou ocultar painel direito" aria-pressed="true">›</button></div>
       <nav class="inspector-tabs" aria-label="Navegar pelos painéis"><a class="active" href="#toolPropertiesPanel">Propriedades</a><a href="#palettePanel">Paleta</a><a href="#historyPanel">Histórico</a></nav>
       <section class="panel color-panel" id="colorPanel"><div class="panel-head"><strong>Cor &amp; aparência</strong><span>•••</span></div><div class="color-content"><div class="wheel-layout"><div id="hueWheel" class="hue-wheel" role="slider" tabindex="0" aria-label="Tom de cor" aria-valuemin="0" aria-valuemax="359" aria-valuenow="330"><div id="hueDot" class="hue-dot"></div><div id="svSquare" class="sv-square" role="group" aria-label="Saturação e brilho"><div id="svDot" class="sv-dot"></div></div></div></div><div class="color-row"><label class="color-picker-box" title="Escolher cor"><input type="color" id="colorInput" value="#ff4aaa"><span id="colorPreview"></span></label><div><span class="small-label">COR ATIVA</span><div class="hex-wrap"># <input id="hexInput" aria-label="Cor hexadecimal" maxlength="6" value="FF4AAA"></div></div></div><div class="rgb-grid"><label>R<input id="redInput" type="number" min="0" max="255" value="255"></label><label>G<input id="greenInput" type="number" min="0" max="255" value="74"></label><label>B<input id="blueInput" type="number" min="0" max="255" value="170"></label></div></div></section>
       <section class="panel" id="palettePanel"><div class="panel-head"><strong>Paleta de cores</strong><span>•••</span></div><div class="palette" id="palette"></div><div class="panel-bottom"><span>Paleta PICO-8 + extras</span><button id="addSwatch" class="mini-btn" title="Adicionar cor atual">+</button></div></section>
@@ -59,7 +76,7 @@
   </div>
 </div>
 <dialog id="settingsDialog"><form method="dialog" class="dialog-body"><div class="dialog-head"><h2>Configurações do projeto</h2><button value="cancel" class="mini-btn" aria-label="Fechar">✕</button></div><p class="muted">Crie uma nova tela. Isso substituirá o desenho atual.</p><label>Largura (px)<input type="number" id="newWidth" min="8" max="128" value="32"></label><label>Altura (px)<input type="number" id="newHeight" min="8" max="128" value="32"></label><div class="dialog-actions"><button value="cancel" class="btn">Cancelar</button><button id="newProjectBtn" value="cancel" class="btn primary">Criar tela</button></div></form></dialog>
-<dialog id="helpDialog"><form method="dialog" class="dialog-body"><div class="dialog-head"><h2>Atalhos</h2><button value="cancel" class="mini-btn">✕</button></div><div class="shortcuts"><span>B</span>Lápis<span>E</span>Borracha<span>G</span>Balde<span>M</span>Seleção<span>I</span>Conta-gotas<span>L</span>Linha<span>R</span>Retângulo<span>O</span>Elipse<span>Ctrl+C/V</span>Copiar/colar seleção<span>Delete</span>Apagar seleção<span>Ctrl+Z</span>Desfazer<span>Ctrl+Y</span>Refazer<span>Espaço</span>Reproduzir</div><div class="dialog-actions"><button value="cancel" class="btn primary">Entendi</button></div></form></dialog>
+<dialog id="helpDialog"><form method="dialog" class="dialog-body"><div class="dialog-head"><h2>Atalhos</h2><button value="cancel" class="mini-btn">✕</button></div><div class="shortcuts"><span>B</span>Lápis<span>E</span>Borracha<span>G</span>Balde<span>M</span>Seleção<span>I</span>Conta-gotas<span>L</span>Linha<span>R</span>Retângulo<span>O</span>Elipse<span>Ctrl+C/V</span>Copiar/colar seleção<span>Delete</span>Apagar seleção<span>Ctrl+Z</span>Desfazer<span>Ctrl+Y</span>Refazer<span>Espaço + arrastar</span>Mover canvas<span>P</span>Reproduzir<span>Tab</span>Modo sem distrações</div><div class="dialog-actions"><button value="cancel" class="btn primary">Entendi</button></div></form></dialog>
 <input id="fileInput" type="file" accept=".json,application/json" hidden><input id="pngInput" type="file" accept="image/png" hidden>
 <dialog id="animationDialog"><form method="dialog" class="dialog-body"><div class="dialog-head"><h2 id="animationDialogTitle">Nova animação</h2><button value="cancel" class="mini-btn" aria-label="Fechar">✕</button></div><label>Nome da animação<input type="text" id="animationName" maxlength="40" value="Idle" required></label><label>Frame inicial (começa em 1)<input type="number" id="animationStart" min="1" value="1"></label><label>Frame final<input type="number" id="animationEnd" min="1" value="8"></label><div class="dialog-actions"><button value="cancel" class="btn">Cancelar</button><button id="confirmAnimation" value="cancel" class="btn primary">Salvar animação</button></div></form></dialog><dialog id="gameModeDialog" class="game-mode-dialog" aria-label="Modo Desenvolvedor de Jogos">
   <section class="game-mode-shell">
