@@ -297,6 +297,7 @@ function mountStudio(){
 function enterStudio(){
  studioRoot.classList.add('studio-large-active');
  document.getElementById('largeCanvasBtn')?.setAttribute('aria-pressed','true');
+ const toggle=$('largeCanvasBtn');if(toggle)toggle.textContent='Voltar ao Studio';
  resize();
  requestDraw();
 }
@@ -315,7 +316,7 @@ root.addEventListener('pixel-checker-changed',refreshCheckerPattern);
 function attach(){
  mountStudio();
  $('largeCanvasBtn').onclick=async()=>{
-  const w=Number($('blankProjectWidth').value),h=Number($('blankProjectHeight').value);
+  if(isActive()){$('largeClose').click();return;}
   try{
    if(project){enterStudio();requestDraw();}
    else await start(10000,10000);
@@ -325,6 +326,7 @@ function attach(){
   if(project&&revision)void save().catch(()=>{});
   studioRoot.classList.remove('studio-large-active');
   document.getElementById('largeCanvasBtn')?.setAttribute('aria-pressed','false');
+  const toggle=$('largeCanvasBtn');if(toggle)toggle.textContent='Tela grande';
   document.getElementById('canvasViewport')?.focus({preventScroll:true});
  };
  $('largeAddLayer').onclick=()=>{if(project.layers.length>=16)return status('Máximo de 16 camadas neste modo');project.layers.push(blankLayer('Camada '+(project.layers.length+1)));selected=project.layers.length-1;renderLayers();schedule();};
