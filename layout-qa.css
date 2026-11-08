@@ -148,3 +148,45 @@ html,body{width:100%;max-width:100%;overflow-x:hidden}
  .editor>.canvas-header{min-height:37px;height:37px}
  .editor>.canvas-footer{height:25px}
 }
+
+/* Unified 10K drawing surface — the same viewport and editing chrome as a 32px sprite. */
+.app.studio-large-active .editor>.canvas-viewport{
+ display:flex!important;position:relative;flex:1 1 auto;min-width:0;min-height:0;
+ width:100%;overflow:hidden;padding:0!important;
+ align-items:stretch;justify-content:stretch;
+}
+.app.studio-large-active .editor>.canvas-viewport>.canvas-shadow{display:none!important}
+.app.studio-large-active .editor>.canvas-viewport>.large-stage{
+ position:absolute;inset:0;display:flex!important;
+ width:100%;height:100%;min-width:0;min-height:0;max-width:100%;
+ overflow:hidden;margin:0;padding:0;flex-direction:column;
+}
+.app.studio-large-active .editor>.canvas-viewport>.large-stage>.large-viewport{
+ display:flex!important;width:100%;height:100%;min-width:0;min-height:0;
+ flex:1 1 auto;overflow:hidden;
+}
+.app.studio-large-active .editor>.selection-bar{
+ display:flex!important;min-width:0;overflow-x:auto;white-space:nowrap;
+}
+.app.studio-large-active .editor>.canvas-footer{display:flex!important}
+.app.studio-large-active .editor>.timeline{display:flex!important;height:208px!important;max-height:34dvh}
+.app.studio-large-active .editor>.timeline>.frame-strip{display:flex!important;min-height:56px;flex:1}
+.app.studio-large-active .editor>.timeline>.animation-controls{display:flex!important;opacity:.56}
+.app.studio-large-active .editor>.timeline>.timeline-foot{display:flex!important}
+.app.studio-large-active .editor>.timeline>.large-timeline-note{display:none!important}
+.app.studio-large-active .editor>.timeline>.section-head .timeline-actions{pointer-events:auto;opacity:1}
+.app.studio-large-active .inspector>.panel.studio-panel-minimized{display:block!important}
+.app.studio-large-active .inspector>.panel.studio-panel-minimized>:not(.panel-head){display:none!important}
+.app.studio-large-active .editor>.timeline.studio-timeline-minimized{
+ height:43px!important;min-height:43px!important;max-height:43px!important;
+}
+.app.studio-large-active .editor>.timeline.studio-timeline-minimized>:not(.section-head){display:none!important}
+.app.studio-large-active .workspace>.tools{align-self:stretch}
+.app.studio-large-active .workspace>.inspector{align-self:stretch}
+@media(max-width:720px){
+ .app.studio-large-active .editor>.timeline{height:174px!important;max-height:174px}
+ .app.studio-large-active .editor>.timeline.studio-timeline-minimized{height:43px!important}
+}
+@media(max-height:660px) and (min-width:721px){
+ .app.studio-large-active .editor>.timeline{height:min(170px,28dvh)!important}
+}
