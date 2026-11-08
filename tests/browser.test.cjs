@@ -126,6 +126,31 @@ test('V2.0 homepage, drawing, layers, autosave, export and Game Lab', {timeout:1
   assert.ok(gif.suggestedFilename().endsWith('.gif'));
 
 
+
+  // Studio panels collapse with mouse drag downward and expand when dragged upward.
+  const panel=page.locator('#colorPanel'),head=panel.locator('.panel-head strong');
+  const headerRect=await head.boundingBox();
+  assert.ok(headerRect,'Color panel header missing');
+  const hx=headerRect.x+Math.min(30,headerRect.width/2),hy=headerRect.y+headerRect.height/2;
+  await page.mouse.move(hx,hy);await page.mouse.down();await page.mouse.move(hx,hy+48,{steps:5});await page.mouse.up();
+  assert.ok(await panel.evaluate(el=>el.classList.contains('studio-panel-minimized')),'Dragging header down should collapse panel');
+  const restoreRect=await head.boundingBox();
+  const rx=restoreRect.x+Math.min(30,restoreRect.width/2),ry=restoreRect.y+restoreRect.height/2;
+  await page.mouse.move(rx,ry);await page.mouse.down();await page.mouse.move(rx,ry-48,{steps:5});await page.mouse.up();
+  assert.ok(!await panel.evaluate(el=>el.classList.contains('studio-panel-minimized')),'Dragging header up should expand panel');
+
+  // The 10k canvas should open without pre-allocating a 100-million-pixel RGBA buffer.
+  await page.locator('#largeCanvasBtn').click();
+  await page.locator('#largeCanvasDialog[open]').waitFor();
+  const dimensions=await page.evaluate(()=>{const p=window.PixelBigCanvas.getProject();return{w:p.width,h:p.height,layers:p.layers.length,tiles:p.layers[0].tiles.size};});
+  assert.deepEqual(dimensions,{w:10000,h:10000,layers:1,tiles:0});
+  const largeCanvas=page.locator('#largeDrawCanvas'),largeRect=await largeCanvas.boundingBox();
+  assert.ok(largeRect,'Large drawing canvas must be visible');
+  await page.mouse.click(largeRect.x+largeRect.width/2,largeRect.y+largeRect.height/2);
+  assert.ok(await page.evaluate(()=>window.PixelBigCanvas.getProject().layers[0].tiles.size)>0,'Painting should allocate only necessary tiles');
+  await page.locator('#largeClose').click();
+  await page.locator('#largeCanvasDialog').waitFor({state:'hidden'});
+
   await page.screenshot({path:path.join(root,'tests','studio-v2-homologation.png'),fullPage:true});
   assert.deepEqual(errors,[],'No unexpected browser console/page errors');
   await context.close();
