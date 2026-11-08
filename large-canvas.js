@@ -4,7 +4,7 @@
  */
 'use strict';
 (function(root){
-const $=id=>document.getElementById(id),TILE=128,MAX=10000,MAX_TILES=1600,clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
+const $=id=>document.getElementById(id),TILE=128,MAX=10000,MAX_TILES=6400,clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 const dialog=$('largeCanvasDialog'),canvas=$('largeDrawCanvas'),ctx=canvas.getContext('2d'),viewport=$('largeViewport');
 const DB='pixel-bmister-big-v1',TABLE='works';
 let project=null,selected=0,tool='pencil',color='#9b90ac',brush=1,zoom=1,camX=0,camY=0,gesture=null,pan=null,space=false,saveTimeout=null,revision=0;
@@ -20,7 +20,7 @@ const key=(x,y)=>x+','+y;
 function tile(layer,tx,ty,createIt=false){
  let c=layer.tiles.get(key(tx,ty));
  if(!c&&createIt){
-  if(tilesCount()>=MAX_TILES)throw Error('Limite de blocos pintados atingido. Faça backup do trabalho.');
+  if(tilesCount()>=MAX_TILES)throw Error('Limite de blocos deste documento atingido. Faça backup do trabalho.');
   c=document.createElement('canvas');c.width=TILE;c.height=TILE;layer.tiles.set(key(tx,ty),c);
  }
  return c;
@@ -277,8 +277,7 @@ function attach(){
  $('largeCanvasBtn').onclick=async()=>{
   const w=Number($('blankProjectWidth').value),h=Number($('blankProjectHeight').value);
   try{
-   if(w>128||h>128)await start(w,h,$('blankProjectName').value||'Arte em tela grande');
-   else if(project){if(!dialog.open)dialog.showModal();resize();requestDraw();}
+   if(project){if(!dialog.open)dialog.showModal();resize();requestDraw();}
    else await start(10000,10000);
   }catch(e){alert(e.message);}
  };
