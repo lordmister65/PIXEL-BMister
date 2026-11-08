@@ -168,6 +168,10 @@ test('V2.0 homepage, drawing, layers, autosave, export and Game Lab', {timeout:1
   assert.ok(largeRect&&largeRect.width>250&&largeRect.height>100,'Large drawing canvas must be visible inside Studio');
   await page.mouse.click(largeRect.x+largeRect.width/2,largeRect.y+largeRect.height/2);
   assert.ok(await page.evaluate(()=>window.PixelBigCanvas.getProject().layers[0].tiles.size)>0,'Painting should allocate only necessary tiles');
+  assert.equal(await page.locator('#layerList .layer-item').count(),1,'Large document uses original layer list');
+  await page.locator('#largeImportPngFile').setInputFiles(await png.path());
+  await page.waitForFunction(()=>window.PixelBigCanvas.getProject().layers.length===2);
+  assert.equal(await page.locator('#layerList .layer-item').count(),2,'Imported PNG appears in the original layer panel');
   const firstLargeId=await page.evaluate(()=>window.PixelBigCanvas.getProject().id);
   await page.screenshot({path:path.join(root,'tests','studio-big-canvas.png'),fullPage:true});
   // Opening a second 10K project creates another in-app tab, without replacing the first.
