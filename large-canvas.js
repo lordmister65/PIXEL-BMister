@@ -512,8 +512,13 @@ async function projects(){
 /* Integrated Big Canvas: dock its existing controls inside the normal editor,
    instead of displaying a second floating application/dialog. */
 function mountStudio(){
- const stage=document.querySelector('.large-stage'),editor=studioRoot.querySelector('.editor');
- editor.querySelector('.canvas-header').after(stage);
+ // The tiled renderer is a child of the SAME viewport as regular sprites.
+ // Only the drawing surface switches; toolbars, selection, footer and timeline
+ // stay mounted and retain the same layout regardless of resolution.
+ const stage=document.querySelector('.large-stage');
+ const viewport=document.getElementById('canvasViewport');
+ if(!stage||!viewport)throw Error('Área central de desenho indisponível');
+ viewport.append(stage);
  studioRoot.classList.remove('studio-large-active');
 }
 function enterStudio(){
