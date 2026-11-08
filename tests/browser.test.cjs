@@ -162,6 +162,7 @@ test('V2.0 homepage, drawing, layers, autosave, export and Game Lab', {timeout:1
   assert.ok(largeRect&&largeRect.width>250&&largeRect.height>100,'Large drawing canvas must be visible inside Studio');
   await page.mouse.click(largeRect.x+largeRect.width/2,largeRect.y+largeRect.height/2);
   assert.ok(await page.evaluate(()=>window.PixelBigCanvas.getProject().layers[0].tiles.size)>0,'Painting should allocate only necessary tiles');
+  await page.screenshot({path:path.join(root,'tests','studio-big-canvas.png'),fullPage:true});
   await page.locator('#largeClose').click();
   await page.locator('.app:not(.studio-large-active)').waitFor();
   assert.ok(await page.locator('#artCanvas').isVisible(),'Normal drawing canvas must be restored');
@@ -171,6 +172,20 @@ test('V2.0 homepage, drawing, layers, autosave, export and Game Lab', {timeout:1
   assert.equal(await page.locator('#checkerDarkColor').inputValue(),'#334455');
 
   await page.screenshot({path:path.join(root,'tests','studio-v2-homologation.png'),fullPage:true});
+  // Basic mobile smoke: same integrated large workspace, no second application/dialog.
+  const mobile=await context.newPage();
+  await mobile.setViewportSize({width:390,height:844});
+  mobile.on('pageerror',e=>errors.push('mobile: '+e.message));
+  await mobile.goto('http://127.0.0.1:'+address.port+'/');
+  await mobile.locator('#projectHome[open]').waitFor({timeout:12000});
+  await mobile.locator('#projectHomeClose').click();
+  await mobile.locator('#largeCanvasBtn').click();
+  await mobile.locator('.app.studio-large-active').waitFor();
+  assert.ok(await mobile.locator('#largeDrawCanvas').isVisible(),'Big Canvas remains integrated on mobile');
+  assert.ok(await mobile.locator('.large-toolbar').isVisible(),'Big tools remain available on mobile');
+  assert.ok(await mobile.locator('.large-settings').isVisible(),'Big inspector remains available on mobile');
+  await mobile.screenshot({path:path.join(root,'tests','studio-big-canvas-mobile.png'),fullPage:true});
+  await mobile.close();
   assert.deepEqual(errors,[],'No unexpected browser console/page errors');
   await context.close();
  }finally{
