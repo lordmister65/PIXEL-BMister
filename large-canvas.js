@@ -258,6 +258,26 @@ function renderLayers(){
   const lock=document.createElement('button');lock.textContent=l.locked?'▣':'◇';lock.title='Bloquear ou desbloquear';lock.onclick=()=>{l.locked=!l.locked;renderLayers();schedule();};
   row.append(choose,eye,lock);list.prepend(row);
  });
+ if(isActive()){
+  const holder=$('layerList');holder.replaceChildren();
+  project.layers.forEach((l,i)=>{
+   const row=document.createElement('div');row.className='layer-item'+(i===selected?' active':'');
+   row.tabIndex=0;row.setAttribute('role','button');row.setAttribute('aria-label','Selecionar camada '+l.name);
+   row.setAttribute('aria-pressed',String(i===selected));
+   const choose=document.createElement('span');choose.className='layer-name';choose.textContent=l.name;
+   const chip=document.createElement('span');chip.className='layer-chip';chip.textContent=i+1;
+   const eye=document.createElement('button');eye.className='eye-btn'+(l.visible?'':' off');eye.textContent=l.visible?'◉':'◌';eye.title='Alternar visibilidade';
+   eye.onclick=e=>{e.stopPropagation();l.visible=!l.visible;schedule();renderLayers();requestDraw();};
+   const lock=document.createElement('button');lock.className='layer-lock'+(l.locked?' locked':'');lock.textContent=l.locked?'▣':'◇';
+   lock.title=l.locked?'Desbloquear camada':'Bloquear camada';
+   lock.onclick=e=>{e.stopPropagation();l.locked=!l.locked;schedule();renderLayers();};
+   row.onclick=()=>{selected=i;renderLayers();};
+   row.onkeydown=e=>{if(e.target===row&&(e.key==='Enter'||e.key===' ')){e.preventDefault();selected=i;renderLayers();}};
+   row.append(eye,chip,choose,lock);holder.prepend(row);
+  });
+  $('opacityInput').value=Math.round(active().opacity*100);
+  $('opacityValue').textContent=Math.round(active().opacity*100)+'%';
+ }
 }
 function activate(p){
  saveState();project=p;selected=0;undo=[];redo=[];revision=0;selectionBox=null;$('largeName').value=p.name;
@@ -360,6 +380,96 @@ function refreshCheckerPattern(){
 }
 root.addEventListener('pixel-checker-changed',refreshCheckerPattern);
 
+/* Route existing Studio controls to the active tiled document. */
+function duplicateActiveLayer(){
+ if(project.layers.length>=16)return status('Limite de 16 camadas');
+ const original=active(),copy=blankLayer(original.name+' (cópia)');
+ copy.visible=original.visible;copy.opacity=original.opacity;
+ for(const [id,source] of original.tiles){
+  const c=document.createElement('canvas');c.width=c.height=TILE;
+  c.getContext('2d').drawImage(source,0,0);copy.tiles.set(id,c);
+ }
+ project.layers.splice(selected+1,0,copy);selected++;renderLayers();schedule();requestDraw();
+}
+function deleteActiveLayer(){
+ if(project.layers.length===1)return status('Mantenha pelo menos uma camada');
+ if(active().locked)return status('Desbloqueie a camada antes de excluir');
+ if(!confirm('Excluir a camada "'+active().name+'"?'))return;
+ project.layers.splice(selected,1);selected=Math.min(selected,project.layers.length-1);
+ renderLayers();schedule();requestDraw();
+}
+function moveLayer(delta){
+ const target=selected+delta;if(target<0||target>=project.layers.length)return;
+ const [layer]=project.layers.splice(selected,1);project.layers.splice(target,0,layer);
+ selected=target;renderLayers();schedule();requestDraw();
+}
+function mergeLayer(){
+ if(selected<1)return status('Não há camada abaixo');
+ const top=active(),bottom=project.layers[selected-1];
+ if(top.locked||bottom.locked)return status('Desbloqueie as camadas antes de mesclar');
+ if(!top.visible||!bottom.visible)return status('Torne as camadas visíveis antes de mesclar');
+ for(const [id,source] of top.tiles){
+  let dest=bottom.tiles.get(id);
+  if(!dest){dest=document.createElement('canvas');dest.width=dest.height=TILE;bottom.tiles.set(id,dest);}
+  const cx=dest.getContext('2d');cx.globalAlpha=top.opacity;cx.drawImage(source,0,0);cx.globalAlpha=1;
+ }
+ project.layers.splice(selected,1);selected--;renderLayers();schedule();requestDraw();
+}
+function syncClassic(){
+ root.PixelStudioEditor?.refresh?.();
+ const classic=root.PixelStudioEditor?.getProject?.();
+ if(classic){
+  $('projectName').value=classic.name||'Meu projeto';
+  $('dimensions').textContent=classic.width+' × '+classic.height;
+  $('sizeInfo').textContent=classic.width+' × '+classic.height+' px';
+ }
+ ['exportSheetBtn','exportGifBtn','gameModeBtn'].forEach(id=>{const b=$(id);if(b){b.disabled=false;b.title='';}});
+}
+function catchStudioCommands(event){
+ if(!isActive())return;
+ const control=event.target.closest('button');
+ if(!control)return;
+ const commands={
+  undoBtn:()=>restoreHistory(undo,redo,'before'),redoBtn:()=>restoreHistory(redo,undo,'after'),
+  historyUndo:()=>restoreHistory(undo,redo,'before'),historyRedo:()=>restoreHistory(redo,undo,'after'),
+  addLayer:()=>{$('largeAddLayer').click();},
+  deleteLayer:deleteActiveLayer,duplicateLayer:duplicateActiveLayer,
+  layerUp:()=>moveLayer(1),layerDown:()=>moveLayer(-1),mergeLayer,
+  saveBtn:saveFile,saveLibraryBtn:()=>{void save().catch(e=>status(e.message));},
+  loadBtn:()=>$('largeImportFile').click(),
+  importPngBtn:()=>status('Importação PNG de imagens grandes ainda não disponível'),
+  exportBtn:exportPNG,
+  zoomIn:()=>zoomAt(zoom*1.25,{x:canvas.clientWidth/2,y:canvas.clientHeight/2}),
+  zoomOut:()=>zoomAt(zoom*.8,{x:canvas.clientWidth/2,y:canvas.clientHeight/2}),
+  fitBtn:fit,centerCanvasBtn:center,
+  copySelection:()=>status('Seleção em tela grande: use a ferramenta retangular'),
+  cutSelection:()=>status('Recortar seleção 10K ainda não disponível'),
+  pasteSelection:()=>status('Colar seleção 10K ainda não disponível'),
+  clearSelection:()=>{selectionBox=null;requestDraw();},
+  deselect:()=>{selectionBox=null;requestDraw();},
+  flipHorizontal:()=>status('Espelhamento em tela grande ainda não disponível'),
+  flipVertical:()=>status('Espelhamento em tela grande ainda não disponível')
+ };
+ if(Object.hasOwn(commands,control.id)){
+  event.preventDefault();event.stopImmediatePropagation();
+  commands[control.id]();
+ }
+}
+document.addEventListener('click',catchStudioCommands,true);
+$('opacityInput').addEventListener('input',e=>{
+ if(!isActive())return;
+ e.stopImmediatePropagation();
+ if(active().locked)return status('Camada bloqueada');
+ active().opacity=clamp(+e.target.value/100,0,1);
+ $('opacityValue').textContent=Math.round(active().opacity*100)+'%';
+ schedule();requestDraw();
+},true);
+$('projectName').addEventListener('input',e=>{
+ if(!isActive())return;
+ e.stopImmediatePropagation();project.name=e.target.value.slice(0,60)||'Sem título';
+ $('largeName').value=project.name;schedule();emitDocument();
+},true);
+
 function attach(){
  mountStudio();
  $('largeCanvasBtn').onclick=async()=>{
@@ -374,7 +484,7 @@ function attach(){
   studioRoot.classList.remove('studio-large-active');
   document.getElementById('largeCanvasBtn')?.setAttribute('aria-pressed','false');
   const toggle=$('largeCanvasBtn');if(toggle)toggle.textContent='Tela grande';
-  const ed=root.PixelStudioEditor;if(ed){$('dimensions').textContent=ed.getProject().width+' × '+ed.getProject().height;$('zoomLabel').textContent=Math.round(ed.getZoom()*100)+'%';$('zoomMini').textContent=$('zoomLabel').textContent;}
+  syncClassic();
   document.getElementById('canvasViewport')?.focus({preventScroll:true});
  };
  $('largeAddLayer').onclick=()=>{if(project.layers.length>=16)return status('Máximo de 16 camadas neste modo');project.layers.push(blankLayer('Camada '+(project.layers.length+1)));selected=project.layers.length-1;renderLayers();schedule();};
