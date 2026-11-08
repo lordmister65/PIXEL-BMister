@@ -139,17 +139,33 @@ test('V2.0 homepage, drawing, layers, autosave, export and Game Lab', {timeout:1
   await page.mouse.move(rx,ry);await page.mouse.down();await page.mouse.move(rx,ry-48,{steps:5});await page.mouse.up();
   assert.ok(!await panel.evaluate(el=>el.classList.contains('studio-panel-minimized')),'Dragging header up should expand panel');
 
-  // The 10k canvas should open without pre-allocating a 100-million-pixel RGBA buffer.
+  // Checkerboard colors are editable, persisted, and reflected in both workspaces.
+  await page.locator('#checkerLightColor').fill('#aabbcc');
+  await page.locator('#checkerDarkColor').fill('#334455');
+  assert.equal(await page.evaluate(()=>getComputedStyle(document.documentElement).getPropertyValue('--checker-light').trim()),'#aabbcc');
+  assert.equal(await page.evaluate(()=>getComputedStyle(document.documentElement).getPropertyValue('--checker-dark').trim()),'#334455');
+
+  // Large art must live inside the existing editor, not a floating dialog.
   await page.locator('#largeCanvasBtn').click();
-  await page.locator('#largeCanvasDialog[open]').waitFor();
-  const dimensions=await page.evaluate(()=>{const p=window.PixelBigCanvas.getProject();return{w:p.width,h:p.height,layers:p.layers.length,tiles:p.layers[0].tiles.size};});
-  assert.deepEqual(dimensions,{w:10000,h:10000,layers:1,tiles:0});
+  await page.locator('.app.studio-large-active').waitFor();
+  const dimensions=await page.evaluate(()=>{
+    const p=window.PixelBigCanvas.getProject(),stage=document.querySelector('.large-stage');
+    return {w:p.width,h:p.height,layers:p.layers.length,tiles:p.layers[0].tiles.size,
+      editorHost:stage.parentElement.classList.contains('editor'),
+      modalOpen:document.getElementById('largeCanvasDialog').open};
+  });
+  assert.deepEqual(dimensions,{w:10000,h:10000,layers:1,tiles:0,editorHost:true,modalOpen:false});
   const largeCanvas=page.locator('#largeDrawCanvas'),largeRect=await largeCanvas.boundingBox();
-  assert.ok(largeRect,'Large drawing canvas must be visible');
+  assert.ok(largeRect&&largeRect.width>250&&largeRect.height>100,'Large drawing canvas must be visible inside Studio');
   await page.mouse.click(largeRect.x+largeRect.width/2,largeRect.y+largeRect.height/2);
   assert.ok(await page.evaluate(()=>window.PixelBigCanvas.getProject().layers[0].tiles.size)>0,'Painting should allocate only necessary tiles');
   await page.locator('#largeClose').click();
-  await page.locator('#largeCanvasDialog').waitFor({state:'hidden'});
+  await page.locator('.app:not(.studio-large-active)').waitFor();
+  assert.ok(await page.locator('#artCanvas').isVisible(),'Normal drawing canvas must be restored');
+  await page.reload();
+  await page.locator('#projectHome[open]').waitFor();
+  assert.equal(await page.locator('#checkerLightColor').inputValue(),'#aabbcc');
+  assert.equal(await page.locator('#checkerDarkColor').inputValue(),'#334455');
 
   await page.screenshot({path:path.join(root,'tests','studio-v2-homologation.png'),fullPage:true});
   assert.deepEqual(errors,[],'No unexpected browser console/page errors');
