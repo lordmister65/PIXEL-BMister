@@ -111,7 +111,7 @@
    big()?.closeDocument(entry.recordId);
   }
   tabs.delete(id);entry.node?.remove();
-  if(currentClassic===id)currentClassic=[...tabs.values()].find(x=>x.type==='classic')?.id||'';
+  if(currentClassic===id)currentClassic=''; // force the next classic tab to load its own stored document
   if(current===id){
    let next=currentClassic&&tabs.has(currentClassic)?currentClassic:[...tabs.keys()][0];
    if(next){current='';await activate(next);}
