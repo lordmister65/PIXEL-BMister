@@ -209,6 +209,45 @@ test('V2.0 homepage, drawing, layers, autosave, export and Game Lab', {timeout:1
   assert.ok(await mobile.locator('#toolPropertiesPanel').isVisible(),'Same properties panel remains available on mobile');
   await mobile.screenshot({path:path.join(root,'tests','studio-big-canvas-mobile.png'),fullPage:true});
   await mobile.close();
+
+  // Layout homologation: no primary regions may paint over one another.
+  for(const [width,height] of [[1920,1080],[1440,900],[1280,720],[1024,768],[800,600],[390,844]]){
+   const tab=await context.newPage();
+   tab.on('pageerror',e=>errors.push('layout '+width+': '+e.message));
+   await tab.setViewportSize({width,height});
+   await tab.goto('http://127.0.0.1:'+address.port+'/');
+   await tab.locator('#projectHome[open]').waitFor({timeout:12000});
+   await tab.locator('#projectHomeClose').click();
+   const check=await tab.evaluate(()=>{
+    const rect=sel=>{const el=document.querySelector(sel);if(!el)return null;
+     const cs=getComputedStyle(el);if(cs.display==='none'||cs.visibility==='hidden')return null;
+     const r=el.getBoundingClientRect();return {x:r.left,y:r.top,right:r.right,bottom:r.bottom,width:r.width,height:r.height};
+    };
+    const overlap=(a,b)=>a&&b&&Math.min(a.right,b.right)-Math.max(a.x,b.x)>3&&Math.min(a.bottom,b.bottom)-Math.max(a.y,b.y)>3;
+    const header=rect('.topbar'),tabs=rect('.document-tabs'),workspace=rect('.workspace'),editor=rect('.editor'),
+          toolbar=rect('.canvas-header'),viewport=rect('#canvasViewport'),timeline=rect('.timeline');
+    return {pageWidth:document.documentElement.scrollWidth,windowWidth:innerWidth,
+      headerTabs:overlap(header,tabs),tabsWorkspace:overlap(tabs,workspace),
+      toolbarViewport:overlap(toolbar,viewport),viewportTimeline:overlap(viewport,timeline),
+      editorWidth:editor?.width||0,viewportHeight:viewport?.height||0};
+   });
+   assert.ok(check.pageWidth<=check.windowWidth+2,'Horizontal overflow at '+width+': '+JSON.stringify(check));
+   for(const key of ['headerTabs','tabsWorkspace','toolbarViewport','viewportTimeline'])
+    assert.equal(check[key],false,'Layout collision '+key+' at '+width+': '+JSON.stringify(check));
+   assert.ok(check.editorWidth>200&&check.viewportHeight>40,'Unusable editor at '+width+': '+JSON.stringify(check));
+   await tab.locator('#largeCanvasBtn').click();
+   await tab.locator('.app.studio-large-active').waitFor();
+   const bigCheck=await tab.evaluate(()=>{
+    const a=document.querySelector('.editor>.large-stage')?.getBoundingClientRect(),
+          b=document.querySelector('.editor>.timeline')?.getBoundingClientRect();
+    return {stage:a?.height,overlap:!!(a&&b&&Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top)>3),
+      pageWidth:document.documentElement.scrollWidth,windowWidth:innerWidth};
+   });
+   assert.ok(bigCheck.stage>40,'10k stage has no usable height at '+width+': '+JSON.stringify(bigCheck));
+   assert.equal(bigCheck.overlap,false,'10k canvas covers timeline at '+width);
+   assert.ok(bigCheck.pageWidth<=bigCheck.windowWidth+2,'10k horizontal overflow at '+width+': '+JSON.stringify(bigCheck));
+   await tab.close();
+  }
   assert.deepEqual(errors,[],'No unexpected browser console/page errors');
   await context.close();
  }finally{
