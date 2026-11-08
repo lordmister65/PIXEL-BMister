@@ -245,8 +245,17 @@ function createManager(adapter){
   };
   $('confirmBlankProject').onclick=e=>{
    const name=$('blankProjectName').value.trim()||'Novo projeto',width=Number($('blankProjectWidth').value),height=Number($('blankProjectHeight').value);
-   try{const doc=makeTemplate('blank',name,width,height);void createDocument(doc);}
-   catch(error){e.preventDefault();toast(error.message);}
+   try{
+    if(!Number.isInteger(width)||!Number.isInteger(height)||width<8||height<8||width>10000||height>10000)throw Error('Dimensões de 8 a 10.000 pixels');
+    if(width>128||height>128){
+     // Sparse tiled editor prevents allocating 8 complete RGBA frames.
+     hide();
+     void root.PixelBigCanvas.open(width,height,name).catch(error=>toast(error.message));
+    }else{
+     const doc=makeTemplate('blank',name,width,height);
+     void createDocument(doc);
+    }
+   }catch(error){e.preventDefault();toast(error.message);}
   };
   $('importProjectHomeBtn').onclick=()=>{
    hide();
