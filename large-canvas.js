@@ -534,8 +534,19 @@ function syncStudio(){
  $('dimensions').textContent=project.width.toLocaleString('pt-BR')+' × '+project.height.toLocaleString('pt-BR');
  $('projectName').value=project.name;
  $('frameIndicator').textContent='01 / 01';$('frameCount').textContent='1 quadro estático';
+ const strip=$('frameStrip');
+ strip.replaceChildren();
+ const staticCard=document.createElement('div');
+ staticCard.className='frame-card selected';
+ staticCard.style.display='flex';staticCard.style.alignItems='center';
+ staticCard.style.justifyContent='center';staticCard.textContent='01';
+ staticCard.setAttribute('aria-label','Quadro estático do documento grande');
+ strip.append(staticCard);
  $('sizeInfo').textContent=project.width.toLocaleString('pt-BR')+' × '+project.height.toLocaleString('pt-BR')+' px';
  renderLayers();renderLargeHistory();
+ for(const id of ['prevFrame','playBtn','nextFrame','fpsInput','onionToggle','onionPrev','onionNext','onionOpacity','animationSelect','addAnimation','editAnimation','deleteAnimation','loopToggle','duplicateFrame','deleteFrame']){
+  const ctl=$(id);if(ctl)ctl.disabled=true;
+ }
  const disabled=['exportSheetBtn','exportGifBtn','gameModeBtn'];
  disabled.forEach(id=>{const btn=$(id);if(btn){btn.disabled=isActive();btn.title=isActive()?'Animações e Game Lab exigem documento animado':'Ação disponível no Studio';}});
  setZoom();
@@ -611,6 +622,9 @@ function mergeLayer(){
  project.layers.splice(selected,1);selected--;renderLayers();schedule();requestDraw();
 }
 function syncClassic(){
+ for(const id of ['prevFrame','playBtn','nextFrame','fpsInput','onionToggle','onionPrev','onionNext','onionOpacity','animationSelect','addAnimation','editAnimation','deleteAnimation','loopToggle','duplicateFrame','deleteFrame']){
+  const ctl=$(id);if(ctl)ctl.disabled=false;
+ }
  root.PixelStudioEditor?.refresh?.();
  const classic=root.PixelStudioEditor?.getProject?.();
  if(classic){
