@@ -93,3 +93,15 @@
  .app.studio-large-active .inspector{width:100%;display:block}
  .app.studio-large-active .inspector .large-settings{display:flex!important;width:100%;flex:1}
 }
+
+/* Large projects always reveal their integrated tool rail and properties,
+   even when the regular Studio was previously in a collapsed/focus layout. */
+.app.studio-large-active .workspace.studio-tools-collapsed .tools,
+.app.studio-large-active.studio-focus-mode .tools{display:flex!important}
+.app.studio-large-active .workspace.studio-inspector-collapsed .inspector,
+.app.studio-large-active.studio-focus-mode .inspector{display:flex!important}
+.app.studio-large-active.studio-focus-mode .editor>.large-header,
+.app.studio-large-active.studio-focus-mode .editor>.large-stage{display:flex!important}
+@media(max-width:860px){
+ .app.studio-large-active .workspace.studio-inspector-collapsed .inspector{display:block!important}
+}
