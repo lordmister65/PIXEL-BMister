@@ -73,6 +73,16 @@
     <aside class="inspector">
       <div class="inspector-toggle-row"><span>INSPECTOR</span><button id="toggleInspectorBtn" class="mini-btn" title="Recolher painel direito" aria-label="Mostrar ou ocultar painel direito" aria-pressed="true">›</button></div>
       <nav class="inspector-tabs" aria-label="Navegar pelos painéis"><a class="active" href="#toolPropertiesPanel">Propriedades</a><a href="#palettePanel">Paleta</a><a href="#historyPanel">Histórico</a></nav>
+      <section class="panel checker-panel" id="checkerPanel">
+        <div class="panel-head"><strong>Fundo quadriculado</strong><span>▦</span></div>
+        <div class="checker-controls">
+          <p>Escolha as duas cores dos quadrados da área de desenho.</p>
+          <label>Cor dos quadrados claros <input id="checkerLightColor" type="color" value="#39393f" aria-label="Cor clara da grade de transparência"></label>
+          <label>Cor dos quadrados escuros <input id="checkerDarkColor" type="color" value="#2b2b30" aria-label="Cor escura da grade de transparência"></label>
+          <div id="checkerPreview" class="checker-preview" aria-label="Prévia das cores do fundo"></div>
+          <button id="checkerReset" class="subtle-btn">Restaurar cores padrão</button>
+        </div>
+      </section>
       <section class="panel color-panel" id="colorPanel"><div class="panel-head"><strong>Cor &amp; aparência</strong><span>•••</span></div><div class="color-content"><div class="wheel-layout"><div id="hueWheel" class="hue-wheel" role="slider" tabindex="0" aria-label="Tom de cor" aria-valuemin="0" aria-valuemax="359" aria-valuenow="330"><div id="hueDot" class="hue-dot"></div><div id="svSquare" class="sv-square" role="group" aria-label="Saturação e brilho"><div id="svDot" class="sv-dot"></div></div></div></div><div class="color-row"><label class="color-picker-box" title="Escolher cor"><input type="color" id="colorInput" value="#ff4aaa"><span id="colorPreview"></span></label><div><span class="small-label">COR ATIVA</span><div class="hex-wrap"># <input id="hexInput" aria-label="Cor hexadecimal" maxlength="6" value="FF4AAA"></div></div></div><div class="rgb-grid"><label>R<input id="redInput" type="number" min="0" max="255" value="255"></label><label>G<input id="greenInput" type="number" min="0" max="255" value="74"></label><label>B<input id="blueInput" type="number" min="0" max="255" value="170"></label></div></div></section>
       <section class="panel" id="palettePanel"><div class="panel-head"><strong>Paleta de cores</strong><span>•••</span></div><div class="palette" id="palette"></div><div class="panel-bottom"><span>Paleta PICO-8 + extras</span><button id="addSwatch" class="mini-btn" title="Adicionar cor atual">+</button></div></section>
       <section class="panel layers-panel"><div class="panel-head"><strong>Camadas</strong><button id="addLayer" class="mini-btn" title="Adicionar camada">+</button></div><div id="layerList" class="layer-list" role="group" aria-label="Camadas do quadro atual"></div><div class="layer-actionbar"><button id="layerUp" class="mini-btn" title="Subir camada (acima)">↑</button><button id="layerDown" class="mini-btn" title="Descer camada (abaixo)">↓</button><button id="duplicateLayer" class="mini-btn" title="Duplicar camada">⧉</button><button id="mergeLayer" class="mini-btn" title="Mesclar com camada abaixo">⇣</button></div><div class="layer-controls"><label>Opacidade <span id="opacityValue">100%</span></label><input id="opacityInput" type="range" min="0" max="100" value="100"><button id="deleteLayer" class="subtle-btn danger">Excluir camada</button></div></section>
@@ -205,6 +215,7 @@
   <section class="large-projects-shell"><header><h2>Projetos de tela grande</h2><button id="largeProjectsClose" class="mini-btn" aria-label="Fechar lista">✕</button></header><button id="largeImportBtn" class="btn">Importar arquivo .pxbig</button><div id="largeProjectList"></div></section>
 </dialog>
 <div id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+<script src="checker-colors.js"></script>
 <script src="large-canvas.js"></script>
 <script src="project-manager.js"></script>
 <script src="professional-tools.js"></script>
