@@ -145,6 +145,8 @@ test('V2.0 homepage, drawing, layers, autosave, export and Game Lab', {timeout:1
   assert.equal(await page.evaluate(()=>getComputedStyle(document.documentElement).getPropertyValue('--checker-light').trim()),'#aabbcc');
   assert.equal(await page.evaluate(()=>getComputedStyle(document.documentElement).getPropertyValue('--checker-dark').trim()),'#334455');
 
+  // Restore pencil before drawing; the selected tool is shared between document tabs.
+  await page.locator('[data-tool="pencil"]').click();
   // Large art must live inside the existing editor, not a floating dialog.
   await page.locator('#largeCanvasBtn').click();
   await page.locator('.app.studio-large-active').waitFor();
