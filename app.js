@@ -376,7 +376,8 @@ window.PixelStudioEditor={
  getColorSelectionMode:()=>$('colorSelectMode').value,
  getProject:()=>projectData(),
  loadProject:data=>{if(!validateProject(data))throw Error('Projeto inválido');savingBlocked=true;try{undoStack.length=0;redoStack.length=0;applyProject(data);renderHistory();}finally{savingBlocked=false;}},
- getZoom:()=>z
+ getZoom:()=>z,
+ refresh:()=>{redraw();renderLayers();renderFrames();renderHistory();$('dimensions').textContent=w+' × '+h;$('sizeInfo').textContent=w+' × '+h+' px';$('zoomMini').textContent=Math.round(z*100)+'%';$('zoomLabel').textContent=Math.round(z*100)+'%';$('projectName').value=$('projectName').value||'Meu projeto';}
 };
 window.PixelStudioCanvas={
   getZoom:()=>z,
