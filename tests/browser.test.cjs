@@ -155,6 +155,9 @@ test('V2.0 homepage, drawing, layers, autosave, export and Game Lab', {timeout:1
       modalOpen:document.getElementById('largeCanvasDialog').open};
   });
   assert.deepEqual(dimensions,{w:10000,h:10000,layers:1,tiles:0,editorHost:true,modalOpen:false});
+  assert.ok(await page.locator('#checkerLightColor').isVisible(),'Checkerboard pickers must remain available in the integrated 10k mode');
+  assert.ok(await page.locator('.large-settings').isVisible(),'Large-mode properties must stay in the Studio inspector');
+  assert.ok(await page.locator('.large-toolbar').isVisible(),'Large-mode tools must stay in the Studio tool rail');
   const largeCanvas=page.locator('#largeDrawCanvas'),largeRect=await largeCanvas.boundingBox();
   assert.ok(largeRect&&largeRect.width>250&&largeRect.height>100,'Large drawing canvas must be visible inside Studio');
   await page.mouse.click(largeRect.x+largeRect.width/2,largeRect.y+largeRect.height/2);
