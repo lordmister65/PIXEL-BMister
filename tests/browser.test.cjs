@@ -162,7 +162,8 @@ test('V2.0 homepage, drawing, layers, autosave, export and Game Lab', {timeout:1
   assert.ok(await page.locator('.tools .tool-group').isVisible(),'Original tools must remain visible');
   assert.ok(!await page.locator('.large-settings').isVisible(),'Duplicate properties panel must be hidden');
   assert.ok(!await page.locator('.large-toolbar').isVisible(),'Duplicate tool rail must be hidden');
-  assert.equal(await page.locator('#documentTabs [role="tab"]').count(),2,'Classic and 10k projects must have separate tabs');
+  assert.ok(await page.locator('#documentTabs [role="tab"]').count()>=3,'Previously opened classic projects and the 10k project must have separate tabs');
+  assert.ok(await page.locator('#documentTabs .document-tab-symbol').filter({hasText:'▤'}).count()>=1,'Large project tab expected');
   const largeCanvas=page.locator('#largeDrawCanvas'),largeRect=await largeCanvas.boundingBox();
   assert.ok(largeRect&&largeRect.width>250&&largeRect.height>100,'Large drawing canvas must be visible inside Studio');
   await page.mouse.click(largeRect.x+largeRect.width/2,largeRect.y+largeRect.height/2);
