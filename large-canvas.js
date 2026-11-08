@@ -11,7 +11,7 @@ let checkerPattern=null;
 const DB='pixel-bmister-big-v1',TABLE='works';
 let project=null,selected=0,tool='pencil',color='#9b90ac',brush=1,zoom=1,camX=0,camY=0,gesture=null,pan=null,space=false,saveTimeout=null,revision=0;
 let undo=[],redo=[],pendingDraw=false,dbPromise=null,busy=false;
-const documents=new Map();let selectionBox=null,selectionDrag=null,largeClipboard=null;
+const documents=new Map();let selectionBox=null,selectionMask=null,selectionDrag=null,largeClipboard=null;
 const makeId=()=>root.crypto?.randomUUID?.()||'big-'+Date.now()+'-'+Math.random().toString(36).slice(2);
 const tilesCount=()=>project.layers.reduce((n,l)=>n+l.tiles.size,0);
 const blankLayer=name=>({id:makeId(),name,visible:true,locked:false,opacity:1,tiles:new Map()});
@@ -107,6 +107,141 @@ function stamp(x,y,erase){
   else{context.fillStyle=color;context.fillRect(xx%TILE,yy%TILE,1,1);}
  }}
 }
+/* Bounded selection and flood operations: never allocate a dense 10K bitmap. */
+const EDIT_LIMIT=800000,REGION_LIMIT=350000;
+const rgbaFromHex=hex=>[parseInt(hex.slice(1,3),16),parseInt(hex.slice(3,5),16),parseInt(hex.slice(5,7),16),255];
+const sameRGBA=(a,b,tolerance=0)=>a.every((v,i)=>Math.abs(v-b[i])<=tolerance);
+function readPixel(l,x,y,cache){
+ if(x<0||y<0||x>=project.width||y>=project.height)return[0,0,0,0];
+ const tx=x>>7,ty=y>>7,k=key(tx,ty);
+ if(!cache.has(k)){
+  const c=tile(l,tx,ty);
+  cache.set(k,c?c.getContext('2d',{willReadFrequently:true}).getImageData(0,0,TILE,TILE).data:null);
+ }
+ const data=cache.get(k),i=((y%TILE)*TILE+x%TILE)*4;
+ return data?[data[i],data[i+1],data[i+2],data[i+3]]:[0,0,0,0];
+}
+function collectRegion(x,y,tolerance=0){
+ if(x<0||y<0||x>=project.width||y>=project.height)return null;
+ const cache=new Map(),l=active(),target=readPixel(l,x,y,cache);
+ const queue=[y*project.width+x],seen=new Set(),matching=[];
+ const spanWidth=project.width;
+ let index=0,minX=x,maxX=x,minY=y,maxY=y;
+ while(index<queue.length){
+  const id=queue[index++];if(seen.has(id))continue;
+  seen.add(id);const xx=id%spanWidth,yy=Math.floor(id/spanWidth);
+  if(!sameRGBA(readPixel(l,xx,yy,cache),target,tolerance))continue;
+  matching.push(id);
+  if(matching.length>REGION_LIMIT){status('Área muito grande para seleção/preenchimento. Divida o desenho em regiões menores.');return null;}
+  minX=Math.min(minX,xx);maxX=Math.max(maxX,xx);minY=Math.min(minY,yy);maxY=Math.max(maxY,yy);
+  if(xx>0)queue.push(id-1);if(xx<spanWidth-1)queue.push(id+1);
+  if(yy>0)queue.push(id-spanWidth);if(yy<project.height-1)queue.push(id+spanWidth);
+ }
+ return{matching,box:{x:minX,y:minY,w:maxX-minX+1,h:maxY-minY+1},target};
+}
+function selectedCell(x,y){
+ if(!selectionBox||x<selectionBox.x||y<selectionBox.y||x>=selectionBox.x+selectionBox.w||y>=selectionBox.y+selectionBox.h)return false;
+ return !selectionMask||selectionMask.has(y*project.width+x);
+}
+function setRectSelection(a,b){
+ const x=clamp(Math.min(a.x,b.x),0,project.width-1),y=clamp(Math.min(a.y,b.y),0,project.height-1);
+ const right=clamp(Math.max(a.x,b.x),0,project.width-1),bottom=clamp(Math.max(a.y,b.y),0,project.height-1);
+ selectionBox={x,y,w:right-x+1,h:bottom-y+1};selectionMask=null;
+ status('Seleção: '+selectionBox.w+' × '+selectionBox.h+' pixels');requestDraw();
+}
+function selectByColor(x,y){
+ const tol=clamp(root.PixelStudioEditor?.getColorTolerance?.()||0,0,100)*2.55;
+ const region=collectRegion(x,y,tol);
+ if(!region)return;
+ selectionBox=region.box;selectionMask=new Set(region.matching);
+ status('Selecionados '+region.matching.length+' pixels pela cor');requestDraw();
+}
+function selectLasso(points){
+ if(points.length<3)return;
+ const left=clamp(Math.min(...points.map(p=>p.x)),0,project.width-1);
+ const top=clamp(Math.min(...points.map(p=>p.y)),0,project.height-1);
+ const right=clamp(Math.max(...points.map(p=>p.x)),0,project.width-1);
+ const bottom=clamp(Math.max(...points.map(p=>p.y)),0,project.height-1);
+ const w=right-left+1,h=bottom-top+1;
+ if(w*h>EDIT_LIMIT)return status('Laço muito grande. Selecione uma região menor.');
+ const relative=points.map(p=>({x:p.x-left,y:p.y-top}));
+ const mask=root.PixelProfessionalTools.polygonMask(relative,w,h);
+ selectionBox={x:left,y:top,w,h};selectionMask=new Set();
+ for(let yy=0;yy<h;yy++)for(let xx=0;xx<w;xx++)if(mask[yy*w+xx])selectionMask.add((top+yy)*project.width+left+xx);
+ status('Laço selecionado: '+selectionMask.size+' pixels');requestDraw();
+}
+function fillRegion(x,y){
+ const region=collectRegion(x,y,0);
+ if(!region)return;
+ const dest=rgbaFromHex(color);
+ if(sameRGBA(region.target,dest))return;
+ for(const id of region.matching){
+  const xx=id%project.width,yy=Math.floor(id/project.width),tx=Math.floor(xx/TILE),ty=Math.floor(yy/TILE);
+  checkpoint(tx,ty);
+  const c=tile(active(),tx,ty,true);
+  const context=c.getContext('2d');context.fillStyle=color;
+  context.fillRect(xx%TILE,yy%TILE,1,1);
+ }
+ status('Preenchidos '+region.matching.length+' pixels');
+}
+function copyLargeSelection(){
+ if(!selectionBox)return status('Selecione uma área primeiro');
+ const b=selectionBox,total=b.w*b.h;
+ if(total>EDIT_LIMIT)return status('Seleção muito grande para copiar; escolha uma região menor');
+ const pixels=new Uint8ClampedArray(total*4),mask=new Uint8Array(total),cache=new Map();
+ for(let y=0;y<b.h;y++)for(let x=0;x<b.w;x++){
+  const gx=b.x+x,gy=b.y+y,idx=y*b.w+x;
+  if(!selectedCell(gx,gy))continue;
+  mask[idx]=1;const c=readPixel(active(),gx,gy,cache);
+  pixels.set(c,idx*4);
+ }
+ largeClipboard={w:b.w,h:b.h,pixels,mask};
+ status('Copiados '+total+' pixels');return largeClipboard;
+}
+function applyClipboard(data,ox,oy,erase=false){
+ if(active().locked)return status('Camada bloqueada');
+ gesture={before:new Map(),start:{x:ox,y:oy},end:{x:ox,y:oy}};
+ const modified=new Map();
+ for(let y=0;y<data.h;y++)for(let x=0;x<data.w;x++){
+  const n=y*data.w+x;if(!data.mask[n])continue;
+  const gx=ox+x,gy=oy+y;if(gx<0||gy<0||gx>=project.width||gy>=project.height)continue;
+  const tx=gx>>7,ty=gy>>7,k=key(tx,ty);
+  if(!modified.has(k)){
+   checkpoint(tx,ty);
+   const c=tile(active(),tx,ty,true),context=c.getContext('2d',{willReadFrequently:true});
+   modified.set(k,{context,bytes:context.getImageData(0,0,TILE,TILE)});
+  }
+  const {bytes}=modified.get(k),di=((gy%TILE)*TILE+gx%TILE)*4;
+  if(erase)bytes.data.fill(0,di,di+4);
+  else bytes.data.set(data.pixels.subarray(n*4,n*4+4),di);
+ }
+ for(const {context,bytes}of modified.values())context.putImageData(bytes,0,0);
+ finish();
+}
+function pasteLargeSelection(){
+ if(!largeClipboard)return status('Nada para colar');
+ const b=selectionBox;
+ const ox=clamp(b?b.x+1:Math.floor(camX+canvas.clientWidth/(2*zoom)),0,project.width-1);
+ const oy=clamp(b?b.y+1:Math.floor(camY+canvas.clientHeight/(2*zoom)),0,project.height-1);
+ applyClipboard(largeClipboard,ox,oy);
+ setRectSelection({x:ox,y:oy},{x:Math.min(project.width-1,ox+largeClipboard.w-1),y:Math.min(project.height-1,oy+largeClipboard.h-1)});
+}
+function eraseLargeSelection(){
+ const copy=copyLargeSelection();if(!copy)return;
+ applyClipboard(copy,selectionBox.x,selectionBox.y,true);
+}
+function flipLargeSelection(axis){
+ const copy=copyLargeSelection();if(!copy)return;
+ const pixels=new Uint8ClampedArray(copy.pixels.length),mask=new Uint8Array(copy.mask.length);
+ for(let y=0;y<copy.h;y++)for(let x=0;x<copy.w;x++){
+  const sx=axis==='h'?copy.w-x-1:x,sy=axis==='v'?copy.h-y-1:y;
+  const i=y*copy.w+x,j=sy*copy.w+sx;
+  pixels.set(copy.pixels.subarray(j*4,j*4+4),i*4);mask[i]=copy.mask[j];
+ }
+ applyClipboard(copy,selectionBox.x,selectionBox.y,true);
+ applyClipboard({w:copy.w,h:copy.h,pixels,mask},selectionBox.x,selectionBox.y);
+}
+
 function line(a,b,fn){
  let x=a.x,y=a.y,dx=Math.abs(b.x-x),dy=Math.abs(b.y-y),sx=x<b.x?1:-1,sy=y<b.y?1:-1,err=dx-dy;
  for(;;){fn(x,y);if(x===b.x&&y===b.y)break;const two=2*err;if(two>-dy){err-=dy;x+=sx;}if(two<dx){err+=dx;y+=sy;}}
@@ -280,7 +415,7 @@ function renderLayers(){
  }
 }
 function activate(p){
- saveState();project=p;selected=0;undo=[];redo=[];revision=0;selectionBox=null;$('largeName').value=p.name;
+ saveState();project=p;selected=0;undo=[];redo=[];revision=0;selectionBox=null;selectionMask=null;$('largeName').value=p.name;
  $('largeDimensions').textContent=p.width.toLocaleString('pt-BR')+' × '+p.height.toLocaleString('pt-BR');
  renderLayers();enterStudio();fit();saveState();emitDocument();status('Projeto aberto — desenhe para começar');
 }
@@ -351,7 +486,7 @@ function syncStudio(){
 }
 function saveState(){
  if(!project)return;
- documents.set(project.id,{project,selected,undo,redo,zoom,camX,camY,revision,selectionBox});
+ documents.set(project.id,{project,selected,undo,redo,zoom,camX,camY,revision,selectionBox,selectionMask});
 }
 function emitDocument(){
  if(!project)return;
@@ -362,7 +497,7 @@ function selectDocument(id){
  if(!state)return false;
  saveState();
  project=state.project;selected=state.selected;undo=state.undo;redo=state.redo;
- zoom=state.zoom;camX=state.camX;camY=state.camY;revision=state.revision;selectionBox=state.selectionBox;
+ zoom=state.zoom;camX=state.camX;camY=state.camY;revision=state.revision;selectionBox=state.selectionBox;selectionMask=state.selectionMask;
  $('largeName').value=project.name;
  enterStudio();renderLayers();requestDraw();emitDocument();return true;
 }
