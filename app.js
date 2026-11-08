@@ -364,6 +364,20 @@ $('historyClear').onclick=()=>{undoStack.length=0;redoStack.length=0;renderHisto
 savingBlocked=true;recoverProject();savingBlocked=false;refreshAnimationList();resize();setColor(ink);render();
 /* V1.7 Studio UX: controlled canvas navigation for the outer workspace module.
    Does not change pixel storage, drawing, frames, exports or autosave. */
+/* Unified tools API: the 10K tiled renderer reads the same tool, color and brush settings. */
+window.PixelStudioEditor={
+ getColor:()=>ink,
+ getTool:()=>tool,
+ getBrushSize:()=>size,
+ getBrushShape:()=>$('brushShape').value,
+ getMirror:()=>$('mirrorDraw').checked,
+ getFilledShapes:()=>$('filledShapes').checked,
+ getColorTolerance:()=>+$('colorTolerance').value||0,
+ getColorSelectionMode:()=>$('colorSelectMode').value,
+ getProject:()=>projectData(),
+ loadProject:data=>{if(!validateProject(data))throw Error('Projeto inválido');savingBlocked=true;try{undoStack.length=0;redoStack.length=0;applyProject(data);renderHistory();}finally{savingBlocked=false;}},
+ getZoom:()=>z
+};
 window.PixelStudioCanvas={
   getZoom:()=>z,
   setZoom(value){z=clamp(Math.round(value),2,40);zoom();return z;},
