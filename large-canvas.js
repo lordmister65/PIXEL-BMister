@@ -387,7 +387,7 @@ async function load(record){
   }
   result.layers.push(layer);
  }
- project=result;selected=0;undo=[];redo=[];$('largeName').value=project.name;$('largeDimensions').textContent=project.width.toLocaleString('pt-BR')+' × '+project.height.toLocaleString('pt-BR');
+ saveState();project=result;selected=0;undo=[];redo=[];selectionBox=null;selectionMask=null;$('largeName').value=project.name;$('largeDimensions').textContent=project.width.toLocaleString('pt-BR')+' × '+project.height.toLocaleString('pt-BR');
  renderLayers();enterStudio();fit();saveState();emitDocument();status('Projeto carregado');
 }
 let write=Promise.resolve();
