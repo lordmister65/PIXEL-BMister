@@ -42,6 +42,12 @@
       <button id="settingsBtn" class="icon-btn" title="Configurações" aria-label="Configurações">⚙</button>
     </div>
   </header>
+  <nav id="documentTabs" class="document-tabs" role="tablist" aria-label="Projetos abertos">
+    <button class="document-tab is-active" id="studioDocumentTab" type="button" role="tab" aria-selected="true" data-document-id="studio">
+      <span class="document-tab-symbol">▦</span><span class="document-tab-title">Meu primeiro sprite</span><span class="document-tab-size">32 × 32</span>
+    </button>
+    <button id="newDocumentTab" class="new-document-tab" type="button" title="Novo projeto" aria-label="Criar projeto em nova aba">＋</button>
+  </nav>
   <div class="workspace">
     <aside class="tools" aria-label="Ferramentas">
       <div class="tool-group">
@@ -222,5 +228,6 @@
 <script src="gif-export.js"></script><script src="game-physics.js"></script>
 <script src="game-mode.js"></script><script src="app.js"></script><script src="studio-ui.js"></script>
 <script src="panel-gestures.js"></script>
+<script src="document-tabs.js"></script>
 </body>
 </html>
