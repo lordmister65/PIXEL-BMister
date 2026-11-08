@@ -1,0 +1,150 @@
+/* PIXEL-BMister — Layout QA: shared Studio, tabbed projects and 10K workspace.
+   Never use absolute positioning for primary UI regions.
+   Long toolbars scroll in their own area rather than paint over neighbours. */
+html,body{width:100%;max-width:100%;overflow-x:hidden}
+.app{width:100%;max-width:100vw;min-width:0;min-height:0}
+.app,.workspace,.editor,.inspector,.topbar,.top-actions,.project-info,
+.canvas-header,.canvas-toolbar,.timeline,.timeline .section-head,
+.document-tabs,.frame-strip,.animation-controls,.selection-bar{box-sizing:border-box}
+.app>*{min-width:0}
+.topbar{
+ display:flex;flex-wrap:nowrap;align-items:center;
+ width:100%;max-width:100%;height:56px;min-height:56px;flex:0 0 56px;
+ padding:0 12px;gap:12px;overflow:visible
+}
+.topbar .brand{flex:0 0 auto;min-width:0}
+.topbar .project-info{flex:1 1 180px;min-width:0;gap:6px;overflow:hidden;justify-content:center}
+.topbar .project-info input{flex:0 1 148px;min-width:0;width:148px;max-width:100%;text-overflow:ellipsis}
+.topbar .project-info #dimensions,.topbar .project-info #zoomLabel{white-space:nowrap}
+.top-actions{
+ flex:0 1 auto;min-width:0;max-width:min(72vw,810px);
+ overflow-x:auto;overflow-y:hidden;scrollbar-width:thin;
+ display:flex;align-items:center;justify-content:flex-end;gap:5px;
+ white-space:nowrap;overscroll-behavior-x:contain;
+}
+.top-actions>*{flex-shrink:0}
+.top-actions .studio-menu{flex-shrink:0}
+.top-actions .studio-menu-list{z-index:50}
+.document-tabs{
+ width:100%;max-width:100%;min-width:0;
+ flex-shrink:0;overscroll-behavior-x:contain;
+}
+.workspace{display:flex;flex:1 1 auto;min-height:0;min-width:0;max-width:100%;overflow:hidden}
+.workspace>.tools{min-height:0;overflow-x:hidden;overflow-y:auto;scrollbar-width:thin}
+.workspace>.editor{min-width:0;min-height:0;overflow:hidden;flex:1 1 0}
+.workspace>.inspector{
+ min-width:220px;max-width:min(480px,40vw);min-height:0;overflow-x:hidden;
+ overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;
+}
+.inspector .panel,.inspector .panel-head,.inspector .panel-content,
+.inspector .layer-item,.inspector .property-options{min-width:0;max-width:100%}
+.inspector .panel-head{display:flex;align-items:center;gap:6px}
+.inspector .panel-head strong{min-width:0;flex:1 1 auto;overflow:hidden;text-overflow:ellipsis}
+.inspector .panel-head>.studio-dock-toggle{margin-left:auto}
+.inspector .inspector-tabs{min-width:0;width:100%;max-width:100%;overflow-x:auto}
+.inspector .inspector-tabs>*{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.inspector input:not([type=checkbox]):not([type=radio]):not([type=color]),
+.inspector select{max-width:100%;min-width:0}
+.inspector .layer-actionbar,.inspector .history-tools{flex-wrap:wrap}
+.editor>.canvas-header,.editor>.canvas-footer{min-width:0;width:100%;max-width:100%;flex-shrink:0}
+.canvas-header{gap:8px;padding:0 12px;overflow:hidden}
+.canvas-header>.eyebrow{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.canvas-header>#statusText{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:right}
+.canvas-header>.canvas-toolbar{flex:0 0 auto;min-width:0;display:flex;align-items:center;gap:5px}
+.canvas-header>.studio-panel-toggle{flex-shrink:0}
+.editor>.canvas-viewport,.editor>.large-stage{min-width:0;min-height:0;flex:1 1 auto;overflow:auto}
+.editor>.large-stage{overflow:hidden}
+.editor>.selection-bar{width:100%;max-width:100%;overflow-x:auto;overscroll-behavior-x:contain}
+.editor>.canvas-footer{gap:8px;overflow:hidden}
+.canvas-footer>span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.canvas-footer>span:last-child{flex-shrink:0}
+.editor>.timeline{
+ min-width:0;max-width:100%;overflow:hidden;
+ display:flex;flex-direction:column;flex-shrink:0;
+}
+.timeline>.section-head{width:100%;min-width:0;display:flex;gap:8px;align-items:center;overflow:hidden}
+.timeline>.section-head>div:first-child{
+ min-width:0;flex:1 1 auto;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.timeline>.section-head>.timeline-actions{min-width:0;max-width:70%;overflow-x:auto;overflow-y:hidden;flex:0 1 auto;gap:5px}
+.timeline>.frame-strip{min-width:0;width:100%;overflow-x:auto;overflow-y:hidden;flex:1 1 auto}
+.timeline>.animation-controls{min-width:0;width:100%;overflow-x:auto;overflow-y:hidden;flex:0 0 auto}
+.timeline>.timeline-foot{min-width:0;width:100%;overflow:hidden;gap:8px}
+.timeline>.timeline-foot>div{min-width:0;max-width:65%;overflow-x:auto}
+.app.studio-large-active .editor>.large-stage{min-height:0;flex:1 1 auto}
+.app.studio-large-active .large-viewport{min-width:0;min-height:0;overflow:hidden}
+.app.studio-large-active .large-timeline-note{max-width:100%;overflow:auto}
+#largeDrawCanvas{max-width:100%;touch-action:none}
+.game-mode-dialog,.project-home,.project-new-dialog{max-width:calc(100vw - 24px)}
+/* Tablet: keep both inspector and editor, but don't let the property pane crush the viewport. */
+@media(max-width:1199px) and (min-width:721px){
+ .topbar{gap:7px;padding:0 9px}
+ .topbar .brand{font-size:13px}
+ .topbar .project-info{display:none}
+ .top-actions{max-width:calc(100vw - 175px);gap:3px}
+ .workspace>.inspector{width:clamp(220px,25vw,284px);max-width:32vw}
+ .canvas-header>.eyebrow{display:none}
+ .timeline>.section-head>.timeline-actions{max-width:77%}
+}
+@media(max-width:900px) and (min-width:721px){
+ .topbar .brand-icon{width:25px;height:25px}
+ .top-actions{max-width:calc(100vw - 155px)}
+ .workspace>.inspector{width:220px;max-width:28vw}
+ .canvas-header{padding:0 7px;gap:4px}
+ .canvas-header .canvas-toolbar{gap:2px}
+ .canvas-header .mini-btn{min-width:25px;padding:0 4px}
+}
+/* Mobile: vertical scroll belongs to the workspace; tool column and editor share one row.
+   Inspector is below, never overlapping the canvas or timeline. */
+@media(max-width:720px){
+ .topbar{height:52px;min-height:52px;flex-basis:52px;padding:0 6px;gap:5px}
+ .topbar .brand{font-size:11px;flex:0 0 auto}
+ .topbar .brand-icon{width:23px;height:23px}
+ .topbar .project-info{display:none}
+ .top-actions{flex:1 1 auto;max-width:none;min-width:0;justify-content:flex-start}
+ .top-actions>.btn,.top-actions>.studio-menu{flex-shrink:0}
+ .workspace{display:flex;flex-wrap:wrap;align-content:flex-start;overflow-x:hidden;overflow-y:auto;min-height:0}
+ .workspace>.tools{flex:0 0 47px;width:47px;max-height:65dvh;overflow-y:auto}
+ .workspace>.editor{
+  flex:1 1 calc(100% - 47px);width:calc(100% - 47px);min-width:0;
+  height:65dvh;min-height:330px;max-height:none
+ }
+ .workspace>.inspector-resizer{display:none!important}
+ .workspace>.inspector{
+  display:grid;width:100%;max-width:100%;min-width:0;flex:0 0 100%;
+  height:auto;max-height:none;overflow:visible;
+  grid-template-columns:repeat(2,minmax(0,1fr));padding:9px;gap:9px
+ }
+ .inspector>.panel{min-width:0;max-width:100%}
+ .canvas-header{padding:0 6px;gap:4px}
+ .canvas-header>#statusText{font-size:10px}
+ .canvas-header .canvas-toolbar{gap:2px}
+ .canvas-header .mini-btn{padding:0 4px;min-width:24px}
+ .timeline>.section-head{padding-left:8px;padding-right:8px}
+ .timeline>.section-head>.timeline-actions{max-width:74%}
+ .app.studio-large-active .workspace{display:flex;flex-direction:row;flex-wrap:wrap}
+ .app.studio-large-active .workspace>.tools{width:47px;height:65dvh;min-height:330px;max-height:65dvh}
+ .app.studio-large-active .workspace>.editor{
+  flex:1 1 calc(100% - 47px);min-width:0;width:calc(100% - 47px);
+  height:65dvh;min-height:330px;max-height:65dvh
+ }
+ .app.studio-large-active .workspace>.inspector{
+  display:grid!important;width:100%;max-width:100%;flex:0 0 100%;
+ }
+}
+@media(max-width:460px){
+ .topbar .brand{font-size:10px}
+ .top-actions{gap:3px}
+ .top-actions .btn{font-size:9px!important;padding:6px!important}
+ .workspace>.inspector{grid-template-columns:1fr}
+ .timeline>.section-head>.timeline-actions{max-width:66%}
+ .canvas-header #statusText{font-size:9px}
+ .canvas-header .canvas-toolbar{gap:1px}
+ .editor>.canvas-footer{padding:0 6px}
+ .editor>.canvas-footer>span:nth-child(2){display:none}
+}
+@media(max-height:660px) and (min-width:721px){
+ .editor>.timeline{height:min(170px,28dvh)}
+ .editor>.canvas-header{min-height:37px;height:37px}
+ .editor>.canvas-footer{height:25px}
+}
