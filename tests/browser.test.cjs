@@ -168,7 +168,20 @@ test('V2.0 homepage, drawing, layers, autosave, export and Game Lab', {timeout:1
   assert.ok(largeRect&&largeRect.width>250&&largeRect.height>100,'Large drawing canvas must be visible inside Studio');
   await page.mouse.click(largeRect.x+largeRect.width/2,largeRect.y+largeRect.height/2);
   assert.ok(await page.evaluate(()=>window.PixelBigCanvas.getProject().layers[0].tiles.size)>0,'Painting should allocate only necessary tiles');
+  const firstLargeId=await page.evaluate(()=>window.PixelBigCanvas.getProject().id);
   await page.screenshot({path:path.join(root,'tests','studio-big-canvas.png'),fullPage:true});
+  // Opening a second 10K project creates another in-app tab, without replacing the first.
+  await page.locator('#largeCanvasBtn').click();
+  await page.waitForFunction(id=>window.PixelBigCanvas.getProject()?.id!==id,firstLargeId);
+  const secondLargeId=await page.evaluate(()=>window.PixelBigCanvas.getProject().id);
+  assert.equal(await page.evaluate(()=>window.PixelBigCanvas.getProject().layers[0].tiles.size),0,'Second project starts blank');
+  const openTabs=await page.evaluate(()=>window.PixelDocumentTabs.getTabs());
+  assert.ok(openTabs.some(t=>t.id==='large-'+firstLargeId));
+  assert.ok(openTabs.some(t=>t.id==='large-'+secondLargeId));
+  const firstTabIndex=openTabs.findIndex(t=>t.id==='large-'+firstLargeId);
+  await page.locator('#documentTabs [role="tab"]').nth(firstTabIndex).click();
+  await page.waitForFunction(id=>window.PixelBigCanvas.getProject()?.id===id,firstLargeId);
+  assert.ok(await page.evaluate(()=>window.PixelBigCanvas.getProject().layers[0].tiles.size)>0,'First canvas retains its pixels after switching tabs');
   await page.locator('#documentTabs [role="tab"]').first().click();
   await page.locator('.app:not(.studio-large-active)').waitFor();
   assert.ok(await page.locator('#artCanvas').isVisible(),'Normal drawing canvas must be restored');
