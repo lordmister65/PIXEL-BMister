@@ -285,6 +285,10 @@ function activate(p){
  renderLayers();enterStudio();fit();saveState();emitDocument();status('Projeto aberto — desenhe para começar');
 }
 async function start(w,h,name){
+ if(!isActive()&&root.PixelProjectManager){
+  const ok=await root.PixelProjectManager.flush();
+  if(!ok)throw Error('Não foi possível salvar o projeto atual antes da troca');
+ }
  if(project&&revision)await save();
  activate(create(w,h,name));schedule();
 }
@@ -364,7 +368,7 @@ function selectDocument(id){
 }
 function closeDocument(id){
  if(!documents.has(id))return false;
- if(project?.id===id){saveState();documents.delete(id);project=null;studioRoot.classList.remove('studio-large-active');}
+ if(project?.id===id){saveState();documents.delete(id);project=null;studioRoot.classList.remove('studio-large-active');syncClassic();}
  else documents.delete(id);
  return true;
 }
@@ -436,7 +440,7 @@ function catchStudioCommands(event){
   deleteLayer:deleteActiveLayer,duplicateLayer:duplicateActiveLayer,
   layerUp:()=>moveLayer(1),layerDown:()=>moveLayer(-1),mergeLayer,
   saveBtn:saveFile,saveLibraryBtn:()=>{void save().catch(e=>status(e.message));},
-  loadBtn:()=>$('largeImportFile').click(),
+  loadBtn:()=>{void projects().catch(e=>status(e.message));},
   importPngBtn:()=>status('Importação PNG de imagens grandes ainda não disponível'),
   exportBtn:exportPNG,
   zoomIn:()=>zoomAt(zoom*1.25,{x:canvas.clientWidth/2,y:canvas.clientHeight/2}),
@@ -474,9 +478,7 @@ function attach(){
  mountStudio();
  $('largeCanvasBtn').onclick=async()=>{
   try{
-   if(project&&isActive()){await start(10000,10000,'Nova arte 10K');}
-   else if(project){enterStudio();emitDocument();requestDraw();}
-   else await start(10000,10000);
+   await start(10000,10000,'Nova arte 10K');
   }catch(e){alert(e.message);}
  };
  $('largeClose').onclick=()=>{
