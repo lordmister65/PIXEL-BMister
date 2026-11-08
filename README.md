@@ -35,6 +35,23 @@ Alternativamente, escolha **New > Static Site**, selecione o repositório, use *
 
 Não há necessidade de Node.js, banco de dados ou variáveis de ambiente. A publicação acompanha novos commits na branch `main`.
 
+## Tela grande de até 10.000 × 10.000 px e painéis arrastáveis
+
+O PIXEL-BMister agora inclui o **Big Canvas**, um ambiente de pixel art estática para dimensões de **8 até 10.000 pixels por eixo**. Acesse pelo botão **Tela grande** no cabeçalho ou crie um projeto com largura ou altura superior a 128 px nos formulários de novo projeto.
+
+**Como funciona:**
+- O editor tradicional (sprites, camadas e animações) mantém sua arquitetura otimizada para **até 128 × 128 px**. O Big Canvas é separado, pois telas 10k exigem gerenciamento de memória diferente.
+- Big Canvas utiliza blocos de **128 × 128 pixels**, alocados apenas onde há pintura. Um documento novo 10.000 × 10.000 não aloca imediatamente 400 MB por camada.
+- Ferramentas disponíveis: lápis, borracha, linha, retângulo e conta-gotas; camadas com visibilidade e bloqueio; zoom, navegação, desfazer/refazer e salvamento em IndexedDB.
+- Backup independente em **.pxbig** e exportação PNG quando suportada pelo navegador. Exportar PNG de 10.000 × 10.000 pode demandar **400 MB ou mais de memória**, além do consumo dos blocos e da codificação. O aplicativo avisa sobre exportações grandes e o navegador ainda pode impor limites de tamanho/memória.
+- Projetos de tela grande usam uma biblioteca própria. Arquivos **.pxbig** são diferentes dos projetos JSON tradicionais e não incluem timeline ou animações; os formatos não são intercambiáveis.
+- Para preservar trabalhos, exporte backups regularmente. O IndexedDB depende das cotas e das políticas do navegador.
+- O limite de blocos alocados é 6.400 (suficiente para cobrir toda a tela 10.000 × 10.000), embora dispositivos com pouca memória possam não conseguir editar/exportar todos os pixels preenchidos.
+
+**Painéis do Studio Graphite:** arraste o cabeçalho de **Cor**, **Paleta**, **Camadas**, **Propriedades**, **Histórico** ou **Timeline** **para baixo** para recolher; arraste **para cima** para expandir. O botão de seta no cabeçalho também alterna o estado, inclusive pelo teclado. A funcionalidade não remove ou modifica pixels.
+
+Os testes automatizados verificam o carregamento de uma tela 10k sem alocação densa inicial, desenho em blocos e gestos de recolher/expandir. Esta mudança mantém o `render.yaml` estático, sem serviços adicionais.
+
 ## Homologação da V2.0
 
 A homologação automatizada inclui testes reais em **Chromium via Playwright**, além da suíte estática já existente. Foram verificados os fluxos de desenho, undo/redo, bloqueio de camadas, seleção por cor, copiar/colar, PNG, GIF, exportação ZIP Godot, recuperação IndexedDB e abertura do Game Lab. Os testes são executados no GitHub Actions e podem gerar uma captura de tela como artefato.
