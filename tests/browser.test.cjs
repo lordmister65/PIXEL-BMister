@@ -153,10 +153,10 @@ test('V2.0 homepage, drawing, layers, autosave, export and Game Lab', {timeout:1
   const dimensions=await page.evaluate(()=>{
     const p=window.PixelBigCanvas.getProject(),stage=document.querySelector('.large-stage');
     return {w:p.width,h:p.height,layers:p.layers.length,tiles:p.layers[0].tiles.size,
-      editorHost:stage.parentElement.classList.contains('editor'),
+      viewportHost:stage.parentElement.id==='canvasViewport',
       modalOpen:document.getElementById('largeCanvasDialog').open};
   });
-  assert.deepEqual(dimensions,{w:10000,h:10000,layers:1,tiles:0,editorHost:true,modalOpen:false});
+  assert.deepEqual(dimensions,{w:10000,h:10000,layers:1,tiles:0,viewportHost:true,modalOpen:false});
   assert.ok(await page.locator('#checkerLightColor').isVisible(),'Checkerboard pickers must remain available in the integrated 10k mode');
   assert.ok(await page.locator('#toolPropertiesPanel').isVisible(),'Original properties inspector must remain visible');
   assert.ok(await page.locator('.tools .tool-group').isVisible(),'Original tools must remain visible');
@@ -238,12 +238,22 @@ test('V2.0 homepage, drawing, layers, autosave, export and Game Lab', {timeout:1
    await tab.locator('#largeCanvasBtn').click();
    await tab.locator('.app.studio-large-active').waitFor();
    const bigCheck=await tab.evaluate(()=>{
-    const a=document.querySelector('.editor>.large-stage')?.getBoundingClientRect(),
-          b=document.querySelector('.editor>.timeline')?.getBoundingClientRect();
-    return {stage:a?.height,overlap:!!(a&&b&&Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top)>3),
+    const stage=document.querySelector('#canvasViewport>.large-stage')?.getBoundingClientRect(),
+          main=document.querySelector('#canvasViewport')?.getBoundingClientRect(),
+          selection=document.querySelector('.editor>.selection-bar')?.getBoundingClientRect(),
+          footer=document.querySelector('.editor>.canvas-footer')?.getBoundingClientRect(),
+          timeline=document.querySelector('.editor>.timeline')?.getBoundingClientRect();
+    const overlap=(a,b)=>!!(a&&b&&Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top)>3&&Math.min(a.right,b.right)-Math.max(a.left,b.left)>3);
+    return {stage:stage?.height,viewport:main?.height,
+      stageInsideViewport:!!(stage&&main&&stage.top>=main.top-2&&stage.bottom<=main.bottom+2),
+      selectionVisible:!!(selection&&selection.height>15),
+      footerVisible:!!(footer&&footer.height>15),
+      timelineVisible:!!(timeline&&timeline.height>35),
+      overlap:overlap(main,timeline)||overlap(footer,timeline)||overlap(selection,timeline),
       pageWidth:document.documentElement.scrollWidth,windowWidth:innerWidth};
    });
    assert.ok(bigCheck.stage>40,'10k stage has no usable height at '+width+': '+JSON.stringify(bigCheck));
+   assert.ok(bigCheck.stageInsideViewport&&bigCheck.selectionVisible&&bigCheck.footerVisible&&bigCheck.timelineVisible,'10k lost native editor controls at '+width+': '+JSON.stringify(bigCheck));
    assert.equal(bigCheck.overlap,false,'10k canvas covers timeline at '+width);
    assert.ok(bigCheck.pageWidth<=bigCheck.windowWidth+2,'10k horizontal overflow at '+width+': '+JSON.stringify(bigCheck));
    await tab.close();
