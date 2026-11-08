@@ -15,6 +15,8 @@ test('main JS parses without syntax errors',()=>{
   assert.doesNotThrow(()=>new vm.Script(read('game-physics.js')));
   assert.doesNotThrow(()=>new vm.Script(read('studio-ui.js')));
   assert.doesNotThrow(()=>new vm.Script(read('project-manager.js')));
+  assert.doesNotThrow(()=>new vm.Script(read('large-canvas.js')));
+  assert.doesNotThrow(()=>new vm.Script(read('panel-gestures.js')));
   assert.doesNotThrow(()=>new vm.Script(read('professional-tools.js')));
 });
 
@@ -281,4 +283,38 @@ test('V2.0 saved project validation and storage concurrency safeguards are prese
  assert.match(library,/writeQueue\.catch\(\(\)=>\{\}\)\.then/);
  assert.match(library,/await writeQueue/);
  assert.match(read('render.yaml'),/runtime:\s*static/);
+});
+
+
+test('10,000 x 10,000 project editor is sparse and does not allocate dense images on open',()=>{
+ const html=read('index.html'),large=read('large-canvas.js'),theme=read('large-canvas.css');
+ for(const id of ['largeCanvasBtn','largeCanvasDialog','largeDrawCanvas','largeViewport','largeProjectsDialog','largeLayerList','largeSaveFile','largeExport']){
+  assert.ok(html.includes('id="'+id+'"'),'Missing large canvas UI: '+id);
+ }
+ assert.match(html,/id="blankProjectWidth"[^>]+max="10000"/);
+ assert.match(html,/id="blankProjectHeight"[^>]+max="10000"/);
+ assert.match(html,/id="newWidth"[^>]+max="10000"/);
+ assert.match(html,/id="newHeight"[^>]+max="10000"/);
+ assert.match(large,/TILE=128,MAX=10000,MAX_TILES=6400/);
+ assert.match(large,/tiles:new Map\(\)/);
+ assert.match(large,/function serialize\(/);
+ assert.match(large,/function exportPNG\(/);
+ assert.match(theme,/\.large-canvas-dialog/);
+ assert.match(read('project-manager.js'),/PixelBigCanvas\.open\(width,height,name\)/);
+ assert.match(read('app.js'),/PixelBigCanvas\.open\(nw,nh/);
+ assert.match(read('render.yaml'),/runtime:\s*static/);
+});
+
+test('Studio dock panels support both pointer gestures and button toggles',()=>{
+ const ui=read('panel-gestures.js'),html=read('index.html'),theme=read('studio-theme.css');
+ assert.match(html,/src="panel-gestures\.js"/);
+ assert.match(ui,/pointerdown/);
+ assert.match(ui,/pointermove/);
+ assert.match(ui,/pointerup/);
+ assert.match(ui,/studio-panel-minimized/);
+ assert.match(ui,/studio-timeline-minimized/);
+ assert.match(ui,/aria-expanded/);
+ assert.match(theme,/studio-panel-minimized/);
+ assert.match(theme,/studio-timeline-minimized/);
+ assert.match(theme,/\.studio-dock-toggle/);
 });
