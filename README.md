@@ -35,6 +35,18 @@ Alternativamente, escolha **New > Static Site**, selecione o repositório, use *
 
 Não há necessidade de Node.js, banco de dados ou variáveis de ambiente. A publicação acompanha novos commits na branch `main`.
 
+## Correção de layout responsivo e sobreposições
+
+A interface Studio Graphite passa por uma camada de CSS responsivo (`layout-qa.css`) carregada **depois** dos estilos anteriores, para garantir que o cabeçalho, as abas dos projetos, a timeline, o canvas e as propriedades não se sobreponham. As barras longas têm rolagem horizontal própria em vez de ocupar áreas vizinhas.
+
+- **Desktop:** largura do inspetor controlada; canvas usa o espaço livre e não fica encoberto pela timeline.
+- **Tablet:** o inspetor se adapta a uma largura mais estreita, preservando a edição central.
+- **Celular:** ferramentas e canvas continuam lado a lado no topo da área de trabalho; inspetor vai abaixo, com rolagem do workspace.
+- **Projetos 10K:** mesmos limites de layout do Studio convencional, sem outra janela.
+- **Testes automatizados em Chromium:** verificações geométricas em 1920×1080, 1440×900, 1280×720, 1024×768, 800×600 e 390×844, incluindo alternância para o canvas 10K.
+
+O tamanho de alguns dispositivos exige rolagem dentro das barras ou dos painéis; nenhuma ferramenta é removida do projeto por essa mudança.
+
 ## Tela grande de até 10.000 × 10.000 px e painéis arrastáveis
 
 O PIXEL-BMister agora inclui o **Big Canvas**, um ambiente de pixel art estática para dimensões de **8 até 10.000 pixels por eixo**. Acesse pelo botão **Tela grande** no cabeçalho ou crie um projeto com largura ou altura superior a 128 px nos formulários de novo projeto.
