@@ -5,7 +5,9 @@
 'use strict';
 (function(root){
 const $=id=>document.getElementById(id),TILE=128,MAX=10000,MAX_TILES=6400,clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
-const dialog=$('largeCanvasDialog'),canvas=$('largeDrawCanvas'),ctx=canvas.getContext('2d'),viewport=$('largeViewport');
+const studioRoot=document.querySelector('.app'),canvas=$('largeDrawCanvas'),ctx=canvas.getContext('2d'),viewport=$('largeViewport');
+const isActive=()=>studioRoot.classList.contains('studio-large-active');
+let checkerPattern=null;
 const DB='pixel-bmister-big-v1',TABLE='works';
 let project=null,selected=0,tool='pencil',color='#9b90ac',brush=1,zoom=1,camX=0,camY=0,gesture=null,pan=null,space=false,saveTimeout=null,revision=0;
 let undo=[],redo=[],pendingDraw=false,dbPromise=null,busy=false;
@@ -42,12 +44,14 @@ function resize(){
 const renderTile=(l,t,x,y)=>{ctx.globalAlpha=l.opacity;ctx.drawImage(t,(x*TILE-camX)*zoom,(y*TILE-camY)*zoom,TILE*zoom,TILE*zoom);};
 function requestDraw(){if(pendingDraw)return;pendingDraw=true;requestAnimationFrame(()=>{pendingDraw=false;draw();});}
 function draw(){
- if(!project)return;
+ if(!project||!isActive())return;
  const b=bounds(),dpr=canvas.width/b.w;ctx.setTransform(dpr,0,0,dpr,0,0);ctx.imageSmoothingEnabled=false;
  ctx.fillStyle='#1c1c1f';ctx.fillRect(0,0,b.w,b.h);
  const left=-camX*zoom,top=-camY*zoom;
  ctx.fillStyle='#303035';ctx.fillRect(left-3,top-3,project.width*zoom+6,project.height*zoom+6);
- ctx.fillStyle='#f0eff1';ctx.fillRect(left,top,project.width*zoom,project.height*zoom);
+ if(!checkerPattern)refreshCheckerPattern();
+ ctx.fillStyle=checkerPattern||'#f0eff1';
+ ctx.fillRect(left,top,project.width*zoom,project.height*zoom);
  ctx.save();ctx.beginPath();ctx.rect(left,top,project.width*zoom,project.height*zoom);ctx.clip();
  const minX=Math.max(0,Math.floor(camX/TILE)),maxX=Math.min(Math.ceil(project.width/TILE),Math.ceil((camX+b.w/zoom)/TILE));
  const minY=Math.max(0,Math.floor(camY/TILE)),maxY=Math.min(Math.ceil(project.height/TILE),Math.ceil((camY+b.h/zoom)/TILE));
@@ -156,9 +160,9 @@ canvas.addEventListener('pointerup',e=>{
  finish();
 });
 canvas.addEventListener('pointercancel',()=>{pan=null;finish();});
-canvas.addEventListener('wheel',e=>{if(!dialog.open)return;e.preventDefault();zoomAt(zoom*(e.deltaY<0?1.25:.8),point(e));},{passive:false});
+canvas.addEventListener('wheel',e=>{if(!isActive())return;e.preventDefault();zoomAt(zoom*(e.deltaY<0?1.25:.8),point(e));},{passive:false});
 document.addEventListener('keydown',e=>{
- if(!dialog.open||e.target.closest('input,textarea,select,button')||$('largeProjectsDialog').open)return;
+ if(!isActive()||e.target.closest('input,textarea,select,button')||$('largeProjectsDialog').open)return;
  if(e.code==='Space'){space=true;e.preventDefault();return;}
  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){e.preventDefault();e.shiftKey?restoreHistory(redo,undo,'after'):restoreHistory(undo,redo,'before');return;}
  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='y'){e.preventDefault();restoreHistory(redo,undo,'after');return;}
@@ -213,7 +217,7 @@ async function load(record){
   result.layers.push(layer);
  }
  project=result;selected=0;undo=[];redo=[];$('largeName').value=project.name;$('largeDimensions').textContent=project.width.toLocaleString('pt-BR')+' × '+project.height.toLocaleString('pt-BR');
- renderLayers();resize();fit();status('Projeto carregado');
+ renderLayers();enterStudio();fit();status('Projeto carregado');
 }
 let write=Promise.resolve();
 async function save(){
@@ -236,7 +240,7 @@ function renderLayers(){
 function activate(p){
  project=p;selected=0;undo=[];redo=[];revision=0;$('largeName').value=p.name;
  $('largeDimensions').textContent=p.width.toLocaleString('pt-BR')+' × '+p.height.toLocaleString('pt-BR');
- renderLayers();if(!dialog.open)dialog.showModal();resize();fit();status('Projeto aberto — desenhe para começar');
+ renderLayers();enterStudio();fit();status('Projeto aberto — desenhe para começar');
 }
 async function start(w,h,name){
  if(project&&revision&&!confirm('Salvar alterações antes de abrir uma nova tela?'))return;
@@ -273,15 +277,56 @@ async function projects(){
  if(!records.length)list.textContent='Nenhum projeto salvo em tela grande.';
  $('largeProjectsDialog').showModal();
 }
+
+/* Integrated Big Canvas: dock its existing controls inside the normal editor,
+   instead of displaying a second floating application/dialog. */
+function mountStudio(){
+ const shell=document.querySelector('.large-shell');
+ const stage=shell.querySelector('.large-stage');
+ const header=shell.querySelector('.large-header');
+ const tools=shell.querySelector('.large-toolbar');
+ const settings=shell.querySelector('.large-settings');
+ const editor=studioRoot.querySelector('.editor');
+ editor.prepend(stage);
+ editor.prepend(header);
+ studioRoot.querySelector('.tools').append(tools);
+ studioRoot.querySelector('.inspector').append(settings);
+ // Restore a neutral default before opening any project.
+ studioRoot.classList.remove('studio-large-active');
+}
+function enterStudio(){
+ studioRoot.classList.add('studio-large-active');
+ document.getElementById('largeCanvasBtn')?.setAttribute('aria-pressed','true');
+ resize();
+ requestDraw();
+}
+function refreshCheckerPattern(){
+ const colors=root.PixelCheckerSettings?.get?.()||{light:'#39393f',dark:'#2b2b30'};
+ const tileSize=16,patternCanvas=document.createElement('canvas');
+ patternCanvas.width=patternCanvas.height=tileSize*2;
+ const pc=patternCanvas.getContext('2d');
+ pc.fillStyle=colors.light;pc.fillRect(0,0,32,32);
+ pc.fillStyle=colors.dark;pc.fillRect(0,0,16,16);pc.fillRect(16,16,16,16);
+ checkerPattern=ctx.createPattern(patternCanvas,'repeat');
+ requestDraw();
+}
+root.addEventListener('pixel-checker-changed',refreshCheckerPattern);
+
 function attach(){
+ mountStudio();
  $('largeCanvasBtn').onclick=async()=>{
   const w=Number($('blankProjectWidth').value),h=Number($('blankProjectHeight').value);
   try{
-   if(project){if(!dialog.open)dialog.showModal();resize();requestDraw();}
+   if(project){enterStudio();requestDraw();}
    else await start(10000,10000);
   }catch(e){alert(e.message);}
  };
- $('largeClose').onclick=()=>{void save().catch(()=>{});dialog.close();};
+ $('largeClose').onclick=()=>{
+  if(project&&revision)void save().catch(()=>{});
+  studioRoot.classList.remove('studio-large-active');
+  document.getElementById('largeCanvasBtn')?.setAttribute('aria-pressed','false');
+  document.getElementById('canvasViewport')?.focus({preventScroll:true});
+ };
  $('largeAddLayer').onclick=()=>{if(project.layers.length>=16)return status('Máximo de 16 camadas neste modo');project.layers.push(blankLayer('Camada '+(project.layers.length+1)));selected=project.layers.length-1;renderLayers();schedule();};
  $('largeColor').oninput=e=>color=e.target.value;
  $('largeBrush').oninput=e=>{brush=+e.target.value;$('largeBrushValue').textContent=brush+' px';};
@@ -299,7 +344,7 @@ function attach(){
   try{if(file.size>80*1024*1024)throw Error('Arquivo muito grande');const data=JSON.parse(await file.text());if(project&&revision)await save();await load(data);$('largeProjectsDialog').close();schedule();}
   catch(err){status(err.message);}e.target.value='';
  };
- root.addEventListener('resize',()=>{if(dialog.open)resize();});
+ root.addEventListener('resize',()=>{if(isActive())resize();});
 }
 attach();
 root.PixelBigCanvas={create,open:(w,h,name)=>start(w,h,name),getProject:()=>project};
