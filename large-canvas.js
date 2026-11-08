@@ -181,9 +181,9 @@ async function store(mode,action){
 }
 function encodeBytes(bytes){let s='';for(let p=0;p<bytes.length;p+=8192)s+=String.fromCharCode(...bytes.subarray(p,p+8192));return btoa(s);}
 function decodeBytes(s){const bin=atob(s),out=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)out[i]=bin.charCodeAt(i);return out;}
-async function serialize(){
- const record={format:'Pixel-BMister-Tiled',version:1,id:project.id,name:project.name,width:project.width,height:project.height,updated:Date.now(),layers:[]};
- for(const layer of project.layers){
+async function serialize(source=project){
+ const record={format:'Pixel-BMister-Tiled',version:1,id:source.id,name:source.name,width:source.width,height:source.height,updated:Date.now(),layers:[]};
+ for(const layer of source.layers){
   const cells=[];
   for(const [id,c] of layer.tiles){
    const blob=await new Promise(resolve=>c.toBlob(resolve,'image/png'));
@@ -218,9 +218,9 @@ async function load(record){
 let write=Promise.resolve();
 async function save(){
  if(!project)return;
- const rev=revision;project.name=$('largeName').value.slice(0,60)||'Tela grande';
- const task=write.catch(()=>{}).then(async()=>{const r=await serialize();await store('readwrite',s=>s.put(r));return r;});write=task;
- try{await task;if(rev===revision)status('Projeto salvo neste navegador');return true;}
+ const rev=revision,source=project;source.name=$('largeName').value.slice(0,60)||'Tela grande';
+ const task=write.catch(()=>{}).then(async()=>{const r=await serialize(source);await store('readwrite',s=>s.put(r));return r;});write=task;
+ try{await task;if(source===project&&rev===revision)status('Projeto salvo neste navegador');return true;}
  catch(e){status('Falha no salvamento — exporte o arquivo');throw e;}
 }
 function schedule(){revision++;status('Alterações pendentes');clearTimeout(saveTimeout);saveTimeout=setTimeout(()=>{void save().catch(()=>{});},1200);}
