@@ -471,6 +471,30 @@ async function exportPNG(){
   download(blob,safeName()+'.png');status('PNG exportado');
  }catch(e){status(e.message);}finally{busy=false;button.disabled=false;}
 }
+async function importPngLayer(file){
+ if(!file||!project)return;
+ if(project.layers.length>=16)return status('Limite de 16 camadas atingido');
+ if(file.size>100*1024*1024)return status('PNG maior que 100 MB: reduza antes de importar');
+ let image=null;
+ try{
+  image=await createImageBitmap(file);
+  if(image.width>project.width||image.height>project.height)throw Error('PNG maior que a tela atual. Crie um documento nas dimensões da imagem.');
+  if(image.width*image.height>25000000&&!confirm('O PNG pode consumir muita memória para importar. Deseja continuar?'))return;
+  const count=Math.ceil(image.width/TILE)*Math.ceil(image.height/TILE);
+  if(tilesCount()+count>MAX_TILES)throw Error('O documento excederia o limite de blocos da memória');
+  const newLayer=blankLayer(file.name.replace(/\.png$/i,'').slice(0,50)||'PNG importado');
+  for(let ty=0;ty<Math.ceil(image.height/TILE);ty++)for(let tx=0;tx<Math.ceil(image.width/TILE);tx++){
+   const c=document.createElement('canvas');c.width=c.height=TILE;
+   const sw=Math.min(TILE,image.width-tx*TILE),sh=Math.min(TILE,image.height-ty*TILE);
+   c.getContext('2d').drawImage(image,tx*TILE,ty*TILE,sw,sh,0,0,sw,sh);
+   newLayer.tiles.set(key(tx,ty),c);
+  }
+  project.layers.push(newLayer);selected=project.layers.length-1;
+  renderLayers();schedule();requestDraw();status('PNG importado como camada');
+ }catch(e){status('Falha na importação: '+e.message);}
+ finally{image?.close?.();}
+}
+
 async function saveFile(){try{const data=await serialize();download(new Blob([JSON.stringify(data)],{type:'application/json'}),safeName()+'.pxbig');status('Backup exportado');}catch(e){status(e.message);}}
 async function projects(){
  const records=await store('readonly',s=>s.getAll()),list=$('largeProjectList');list.replaceChildren();
@@ -604,7 +628,7 @@ function catchStudioCommands(event){
   layerUp:()=>moveLayer(1),layerDown:()=>moveLayer(-1),mergeLayer,
   saveBtn:saveFile,saveLibraryBtn:()=>{void save().catch(e=>status(e.message));},
   loadBtn:()=>{void projects().catch(e=>status(e.message));},
-  importPngBtn:()=>status('Importação PNG de imagens grandes ainda não disponível'),
+  importPngBtn:()=>$('largeImportPngFile').click(),
   exportBtn:exportPNG,
   zoomIn:()=>zoomAt(zoom*1.25,{x:canvas.clientWidth/2,y:canvas.clientHeight/2}),
   zoomOut:()=>zoomAt(zoom*.8,{x:canvas.clientWidth/2,y:canvas.clientHeight/2}),
@@ -665,6 +689,7 @@ function attach(){
  $('largeProjects').onclick=()=>{void projects().catch(e=>status(e.message));};
  $('largeProjectsClose').onclick=()=>$('largeProjectsDialog').close();
  $('largeImportBtn').onclick=()=>$('largeImportFile').click();
+ $('largeImportPngFile').onchange=async e=>{const file=e.target.files?.[0];if(!file)return;await importPngLayer(file);e.target.value='';};
  $('largeImportFile').onchange=async e=>{const file=e.target.files[0];if(!file)return;
   try{if(file.size>80*1024*1024)throw Error('Arquivo muito grande');const data=JSON.parse(await file.text());if(project&&revision)await save();await load(data);$('largeProjectsDialog').close();schedule();}
   catch(err){status(err.message);}e.target.value='';
