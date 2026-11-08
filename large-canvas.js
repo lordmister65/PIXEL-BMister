@@ -295,10 +295,12 @@ canvas.addEventListener('pointerdown',e=>{
  if(tool==='eyedropper'){
   for(let i=project.layers.length-1;i>=0;i--){const l=project.layers[i],c=tile(l,Math.floor(w.x/TILE),Math.floor(w.y/TILE));if(!l.visible||!c)continue;
    const col=c.getContext('2d').getImageData(w.x%TILE,w.y%TILE,1,1).data;
-   if(col[3]){color='#'+[col[0],col[1],col[2]].map(v=>v.toString(16).padStart(2,'0')).join('');$('largeColor').value=color;break;}
+   if(col[3]){color='#'+[col[0],col[1],col[2]].map(v=>v.toString(16).padStart(2,'0')).join('');$('largeColor').value=color;root.PixelStudioEditor?.setColor?.(color);break;}
   }return;
  }
- gesture={before:new Map(),start:w,end:w};canvas.setPointerCapture(e.pointerId);
+ if(tool==='magic'){selectByColor(w.x,w.y);return;}
+ gesture={before:new Map(),start:w,end:w,lasso:[w]};canvas.setPointerCapture(e.pointerId);
+ if(tool==='fill'){fillRegion(w.x,w.y);finish();return;}
  if(tool==='pencil'||tool==='eraser')stamp(w.x,w.y,tool==='eraser'||e.button===2);
  requestDraw();
 });
@@ -308,12 +310,24 @@ canvas.addEventListener('pointermove',e=>{
  if(pan){camX=pan.cx+(pan.x-e.clientX)/zoom;camY=pan.cy+(pan.y-e.clientY)/zoom;requestDraw();return;}
  if(!gesture)return;
  if(tool==='pencil'||tool==='eraser')line(gesture.end,w,(x,y)=>stamp(x,y,tool==='eraser'||e.buttons===2));
+ if(tool==='lasso'&&gesture.lasso.length<10000)gesture.lasso.push(w);
  gesture.end=w;requestDraw();
 });
 canvas.addEventListener('pointerup',e=>{
  if(pan){pan=null;return;}
  if(!gesture)return;const end=pixel(point(e));
- if(['line','rect','ellipse'].includes(tool))traverse(gesture.start,end,tool,(x,y)=>stamp(x,y,false));
+ if(['line','rect','ellipse'].includes(tool)){
+  if($('filledShapes')?.checked&&['rect','ellipse'].includes(tool)){
+   const minX=clamp(Math.min(gesture.start.x,end.x),0,project.width-1),maxX=clamp(Math.max(gesture.start.x,end.x),0,project.width-1);
+   const minY=clamp(Math.min(gesture.start.y,end.y),0,project.height-1),maxY=clamp(Math.max(gesture.start.y,end.y),0,project.height-1);
+   if((maxX-minX+1)*(maxY-minY+1)>EDIT_LIMIT)status('Forma preenchida grande demais; use uma área menor');
+   else for(let y=minY;y<=maxY;y++)for(let x=minX;x<=maxX;x++){
+    if(tool==='rect'||(((x-(minX+maxX)/2)/Math.max(.5,(maxX-minX)/2))**2+((y-(minY+maxY)/2)/Math.max(.5,(maxY-minY)/2))**2<=1))stamp(x,y,false);
+   }
+  }else traverse(gesture.start,end,tool,(x,y)=>stamp(x,y,false));
+ }
+ if(tool==='select')setRectSelection(gesture.start,end);
+ if(tool==='lasso')selectLasso(gesture.lasso.concat([end]));
  finish();
 });
 canvas.addEventListener('pointercancel',()=>{pan=null;finish();});
@@ -324,7 +338,7 @@ document.addEventListener('keydown',e=>{
  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){e.preventDefault();e.shiftKey?restoreHistory(redo,undo,'after'):restoreHistory(undo,redo,'before');return;}
  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='y'){e.preventDefault();restoreHistory(redo,undo,'after');return;}
  if(e.ctrlKey||e.metaKey||e.altKey)return;
- const shortcuts={b:'pencil',e:'eraser',l:'line',r:'rect',i:'eyedropper'};
+ const shortcuts={b:'pencil',e:'eraser',g:'fill',m:'select',q:'lasso',w:'magic',l:'line',r:'rect',o:'ellipse',i:'eyedropper'};
  if(shortcuts[e.key.toLowerCase()])setTool(shortcuts[e.key.toLowerCase()]);
 });
 document.addEventListener('keyup',e=>{if(e.code==='Space')space=false;});root.addEventListener('blur',()=>{space=false;pan=null;});
@@ -581,13 +595,13 @@ function catchStudioCommands(event){
   zoomIn:()=>zoomAt(zoom*1.25,{x:canvas.clientWidth/2,y:canvas.clientHeight/2}),
   zoomOut:()=>zoomAt(zoom*.8,{x:canvas.clientWidth/2,y:canvas.clientHeight/2}),
   fitBtn:fit,centerCanvasBtn:center,
-  copySelection:()=>status('Seleção em tela grande: use a ferramenta retangular'),
-  cutSelection:()=>status('Recortar seleção 10K ainda não disponível'),
-  pasteSelection:()=>status('Colar seleção 10K ainda não disponível'),
-  clearSelection:()=>{selectionBox=null;requestDraw();},
-  deselect:()=>{selectionBox=null;requestDraw();},
-  flipHorizontal:()=>status('Espelhamento em tela grande ainda não disponível'),
-  flipVertical:()=>status('Espelhamento em tela grande ainda não disponível')
+  copySelection:copyLargeSelection,
+  cutSelection:()=>{eraseLargeSelection();},
+  pasteSelection:pasteLargeSelection,
+  clearSelection:eraseLargeSelection,
+  deselect:()=>{selectionBox=null;selectionMask=null;requestDraw();},
+  flipHorizontal:()=>flipLargeSelection('h'),
+  flipVertical:()=>flipLargeSelection('v')
  };
  if(Object.hasOwn(commands,control.id)){
   event.preventDefault();event.stopImmediatePropagation();
