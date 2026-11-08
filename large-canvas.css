@@ -45,34 +45,42 @@
 @media(max-width:860px){.large-body{flex-wrap:wrap;overflow:auto}.large-stage{flex:1;min-width:calc(100% - 54px);min-height:55vh}.large-settings{width:100%;flex:1 0 100%;border-left:0;border-top:1px solid #45414a}.large-canvas-dialog{overflow:auto}.large-footer{flex-wrap:wrap}}
 @media(max-width:560px){.large-header{flex-wrap:wrap;padding:9px}.large-head-actions{width:100%;justify-content:flex-end}.large-head-actions .btn{font-size:10px;padding:6px}.large-canvas-controls{padding:4px;gap:4px}#largePointer{display:none}.large-footer{font-size:9px}}
 
-/* Integrated Big Canvas replaces only the drawing workspace, never opens a modal. */
-.app.studio-large-active .tools > :not(.large-toolbar){display:none!important}
-.app.studio-large-active .tools .large-toolbar{display:flex!important;width:100%;flex:1;padding:0;background:transparent;border:0}
-.app:not(.studio-large-active) .large-toolbar,
-.app:not(.studio-large-active) .large-header,
-.app:not(.studio-large-active) .large-stage,
-.app:not(.studio-large-active) .large-settings{display:none!important}
-.app.studio-large-active .editor > :not(.large-header):not(.large-stage){display:none!important}
-.app.studio-large-active .inspector > :not(.large-settings):not(.checker-panel){display:none!important}
-.app.studio-large-active .inspector > .checker-panel{display:block!important;flex-shrink:0}
-.app.studio-large-active .inspector .large-settings{
-  display:flex!important;width:100%;flex:1 1 auto;min-width:0;
-  padding:13px;background:#29292d;border:0;overflow:auto;
+/* Unified workspace: normal toolbar, properties, timeline and editor canvas in every tab. */
+.app:not(.studio-large-active) .large-stage{display:none!important}
+.large-header,.large-toolbar,.large-settings,.large-canvas-dialog{display:none!important}
+.app.studio-large-active .editor>.canvas-viewport,
+.app.studio-large-active .editor>.selection-bar,
+.app.studio-large-active .editor>.canvas-footer{display:none!important}
+.app.studio-large-active .editor>.large-stage{
+ display:flex!important;min-width:0;min-height:80px;flex:1 1 auto;
+ background:#202024;overflow:hidden
 }
-.app.studio-large-active .editor{min-width:0;min-height:0;display:flex;flex-direction:column}
-.app.studio-large-active .editor > .large-header{
-  display:flex!important;flex-shrink:0;padding:9px 14px;min-height:56px;
+.app.studio-large-active .editor>.canvas-header{display:flex!important;flex-shrink:0}
+.app.studio-large-active .editor>.timeline{display:flex!important;flex-shrink:0}
+.app.studio-large-active .editor .large-viewport{display:flex!important;flex:1;min-height:0}
+.app.studio-large-active .large-stage .large-canvas-controls,
+.app.studio-large-active .large-stage .large-footer{display:none!important}
+.app.studio-large-active .tools .tool-group,
+.app.studio-large-active .tools .tools-bottom{display:flex!important}
+.app.studio-large-active .top-actions>*{display:flex}
+.app.studio-large-active .inspector>.panel{display:block!important}
+.app.studio-large-active .inspector>.inspector-tabs{display:grid!important}
+.app.studio-large-active .inspector>.inspector-toggle-row{display:flex!important}
+.app.studio-large-active .inspector>.inspector-footer{display:block!important}
+.app.studio-large-active .inspector>.large-settings{display:none!important}
+.app.studio-large-active .inspector>.checker-panel{display:block!important}
+.app.studio-large-active .timeline>.large-timeline-note{
+ display:flex!important;padding:12px 16px;align-items:center;gap:12px;color:#bbb6c5;font-size:12px
 }
-.app.studio-large-active .editor > .large-stage{
-  display:flex!important;flex:1;min-width:0;min-height:0;
-}
-.app.studio-large-active .editor .large-viewport{display:flex!important;min-height:100px}
-.app.studio-large-active .editor .large-canvas-controls{flex-shrink:0}
-.app.studio-large-active #largeCanvasBtn{background:#585363;border-color:#847b93}
-.app.studio-large-active .top-actions > :not(#largeCanvasBtn):not(#homeBtn){display:none!important}
-.app.studio-large-active .large-toolbar button{width:100%}
-.app.studio-large-active .large-footer{min-height:32px}
-.large-canvas-dialog{display:none!important}
+.app:not(.studio-large-active) .large-timeline-note{display:none!important}
+.app.studio-large-active .timeline>:not(.large-timeline-note):not(.section-head){display:none!important}
+.app.studio-large-active .timeline>.section-head .timeline-actions{pointer-events:none;opacity:.35}
+.app.studio-large-active .timeline{height:105px!important}
+.app.studio-large-active #largeCanvasBtn{background:#4b4755;border-color:#827991}
+.app.studio-large-active.studio-focus-mode .tools,.app.studio-large-active.studio-focus-mode .inspector{display:flex!important}
+.app.studio-large-active.studio-focus-mode .timeline{display:flex!important}
+.app.studio-large-active .workspace.studio-tools-collapsed .tools{display:flex!important}
+.app.studio-large-active .workspace.studio-inspector-collapsed .inspector{display:flex!important}
 .checker-controls{display:grid;gap:10px;padding:12px}
 .checker-controls p{font-size:11px;line-height:1.5;color:#aaa5b2;margin:0}
 .checker-controls label{font-size:11px;color:#c6c1cf;display:flex;justify-content:space-between;align-items:center;gap:8px}
@@ -86,12 +94,10 @@
 }
 @media(max-width:860px){
  .app.studio-large-active .workspace{display:flex;flex-direction:column}
- .app.studio-large-active .tools{width:100%;height:auto;min-height:48px;flex-shrink:0;flex-direction:row}
- .app.studio-large-active .tools .large-toolbar{width:100%;height:46px;flex-direction:row;justify-content:center}
- .app.studio-large-active .tools .large-toolbar button{width:42px;flex:0 0 42px}
+ .app.studio-large-active .tools{width:100%;height:48px;min-height:48px;flex-shrink:0}
+ .app.studio-large-active .tools .tool-group{flex-direction:row!important}
  .app.studio-large-active .editor{height:65dvh;min-height:360px;flex-shrink:0}
- .app.studio-large-active .inspector{width:100%;display:block}
- .app.studio-large-active .inspector .large-settings{display:flex!important;width:100%;flex:1}
+ .app.studio-large-active .inspector{width:100%;display:grid}
 }
 
 /* Large projects always reveal their integrated tool rail and properties,
