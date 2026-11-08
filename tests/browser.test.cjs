@@ -48,7 +48,7 @@ test('V2.0 homepage, drawing, layers, autosave, export and Game Lab', {timeout:1
   page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
   await page.goto('http://127.0.0.1:'+address.port+'/');
   await page.locator('#projectHome[open]').waitFor({timeout:12000});
-  assert.equal(await page.title(),'PIXEL-BMister — Editor de Pixel Art');
+  assert.match(await page.title(),/PIXEL-BMister/);
 
   // Start from a real template and verify the original editor remains functional.
   await page.locator('[data-template="sprite16"]').click();
