@@ -118,8 +118,10 @@ function createManager(adapter){
    const doc=current(),painted=doc.frames.some(f=>f.layers.some(l=>l.pixels.some(v=>v!==0)));
    const customized=doc.name!=='Meu primeiro sprite'||(doc.animationTags?.length||0)>0;
    if(!painted&&!customized)return true;
-   try{await storeSnapshot(generateId(),{...doc,name:(doc.name||'Rascunho')+' (recuperado)'});return true;}
-   catch(e){toast('Salve o rascunho em JSON antes de continuar: '+e.message);return false;}
+   // Give the current draft an actual identity so its document tab survives.
+   const ok=await saveCurrent(false);
+   if(!ok)toast('Salve o rascunho em JSON antes de continuar.');
+   return ok;
   }
   if(revision===lastSavedRevision)return true;
   return saveCurrent(false);
