@@ -263,6 +263,19 @@ function traverse(a,b,shape,fn){
  line({x:x0,y:y0},{x:x1,y:y0},fn);line({x:x0,y:y1},{x:x1,y:y1},fn);
  line({x:x0,y:y0},{x:x0,y:y1},fn);line({x:x1,y:y0},{x:x1,y:y1},fn);
 }
+function renderLargeHistory(){
+ if(!isActive())return;
+ $('historyCount').textContent=undo.length+' ações';
+ const holder=$('historyList');holder.replaceChildren();
+ const summary=document.createElement('div');summary.className='history-step active';
+ summary.textContent='Documento '+project.width+' × '+project.height+' · '+undo.length+' alterações';
+ holder.append(summary);
+ for(let i=undo.length-1;i>=Math.max(0,undo.length-12);i--){
+  const line=document.createElement('div');line.className='history-step';
+  line.textContent='Ação '+(i+1)+' · '+undo[i].length+' bloco(s)';
+  holder.append(line);
+ }
+}
 function finish(){
  if(!gesture)return;
  if(gesture.before.size){
@@ -270,14 +283,14 @@ function finish(){
    const c=tile(l,rec.tx,rec.ty);
    return {...rec,after:c?new Uint8ClampedArray(c.getContext('2d',{willReadFrequently:true}).getImageData(0,0,TILE,TILE).data):null};
   });
-  undo.push(changes);if(undo.length>16)undo.shift();redo=[];changed();
+  undo.push(changes);if(undo.length>16)undo.shift();redo=[];changed();renderLargeHistory();
  }
  gesture=null;requestDraw();
 }
 function restoreHistory(stack,other,side){
  const changes=stack.pop();if(!changes)return;
  for(const c of changes)restore(c,side);
- other.push(changes);changed();
+ other.push(changes);changed();renderLargeHistory();
 }
 function setTool(name){
  tool=name;
@@ -491,9 +504,9 @@ function syncStudio(){
  if(!project)return;
  $('dimensions').textContent=project.width.toLocaleString('pt-BR')+' × '+project.height.toLocaleString('pt-BR');
  $('projectName').value=project.name;
- $('frameIndicator').textContent='01 / 01';
+ $('frameIndicator').textContent='01 / 01';$('frameCount').textContent='1 quadro estático';
  $('sizeInfo').textContent=project.width.toLocaleString('pt-BR')+' × '+project.height.toLocaleString('pt-BR')+' px';
- renderLayers();
+ renderLayers();renderLargeHistory();
  const disabled=['exportSheetBtn','exportGifBtn','gameModeBtn'];
  disabled.forEach(id=>{const btn=$(id);if(btn){btn.disabled=isActive();btn.title=isActive()?'Animações e Game Lab exigem documento animado':'Ação disponível no Studio';}});
  setZoom();
@@ -585,6 +598,7 @@ function catchStudioCommands(event){
  const commands={
   undoBtn:()=>restoreHistory(undo,redo,'before'),redoBtn:()=>restoreHistory(redo,undo,'after'),
   historyUndo:()=>restoreHistory(undo,redo,'before'),historyRedo:()=>restoreHistory(redo,undo,'after'),
+  historyClear:()=>{undo=[];redo=[];renderLargeHistory();status('Histórico desta aba limpo');},
   addLayer:()=>{$('largeAddLayer').click();},
   deleteLayer:deleteActiveLayer,duplicateLayer:duplicateActiveLayer,
   layerUp:()=>moveLayer(1),layerDown:()=>moveLayer(-1),mergeLayer,
