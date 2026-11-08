@@ -265,3 +265,39 @@ test('V2.0 homepage, drawing, layers, autosave, export and Game Lab', {timeout:1
   await new Promise(resolve=>server.close(resolve));
  }
 });
+
+
+test('500×500 document retains the SAME editor viewport, selection controls and timeline', {timeout:90000},async()=>{
+ const server=await serve();let browser;
+ try{
+  browser=await chromium.launch({headless:true,args:['--no-sandbox']});
+  const page=await browser.newPage({viewport:{width:1440,height:900}});
+  await page.goto('http://127.0.0.1:'+server.address().port+'/');
+  await page.locator('#projectHome[open]').waitFor();
+  await page.locator('#projectHomeClose').click();
+  await page.locator('#newDocumentTab').click();
+  await page.locator('#blankProjectDialog[open]').waitFor();
+  await page.locator('#blankProjectName').fill('Teste 500');
+  await page.locator('#blankProjectWidth').fill('500');
+  await page.locator('#blankProjectHeight').fill('500');
+  await page.locator('#confirmBlankProject').click();
+  await page.locator('.app.studio-large-active').waitFor();
+  const layout=await page.evaluate(()=>{
+   const visible=id=>{const e=document.getElementById(id);if(!e)return false;const b=e.getBoundingClientRect();return b.width>0&&b.height>0&&getComputedStyle(e).display!=='none';};
+   const view=document.getElementById('canvasViewport').getBoundingClientRect();
+   const stage=document.querySelector('#canvasViewport>.large-stage')?.getBoundingClientRect();
+   return {width:window.PixelBigCanvas.getProject()?.width,height:window.PixelBigCanvas.getProject()?.height,
+    sameViewport:!!stage&&stage.top>=view.top-2&&stage.bottom<=view.bottom+2,
+    visible:Object.fromEntries(['canvasViewport','largeDrawCanvas','selectionStatus','copySelection','pasteSelection','cursorInfo','sizeInfo','frameStrip','layerList'].map(id=>[id,visible(id)])),
+    timeline:document.querySelector('.timeline').getBoundingClientRect().height,
+    frameButtons:document.querySelectorAll('#frameStrip .frame-card').length};
+  });
+  assert.equal(layout.width,500);assert.equal(layout.height,500);
+  assert.ok(layout.sameViewport,'500px project must use the normal canvas viewport: '+JSON.stringify(layout));
+  for(const [id,on] of Object.entries(layout.visible))assert.ok(on,id+' hidden in 500px document: '+JSON.stringify(layout));
+  assert.ok(layout.timeline>65&&layout.frameButtons===1,'Static timeline missing: '+JSON.stringify(layout));
+  await page.locator('#documentTabs [role="tab"]').first().click();
+  await page.locator('.app:not(.studio-large-active)').waitFor();
+  assert.ok(await page.locator('#artCanvas').isVisible(),'Small document was not restored');
+ }finally{if(browser)await browser.close();await new Promise(resolve=>server.close(resolve));}
+});
