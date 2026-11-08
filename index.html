@@ -15,7 +15,7 @@
     <div class="brand"><span class="brand-icon" aria-hidden="true">▦</span><span>PIXEL<span class="brand-accent">-BMister</span></span></div>
     <div class="project-info"><span class="project-file-icon" aria-hidden="true">◫</span><input id="projectName" aria-label="Nome do projeto" value="Meu primeiro sprite" maxlength="60"><span class="divider-v"></span><span id="dimensions">32 × 32</span><span class="divider-v"></span><span id="zoomLabel">1000%</span></div>
     <div class="top-actions">
-      <button id="homeBtn" class="btn studio-home-btn" title="Projetos e modelos">▦ Projetos</button>
+      <button id="homeBtn" class="btn studio-home-btn" title="Projetos e modelos">▦ Projetos</button><button id="largeCanvasBtn" class="btn studio-home-btn" title="Editor para telas de até 10.000 x 10.000 pixels">Tela grande</button>
       <button id="undoBtn" class="icon-btn" title="Desfazer (Ctrl+Z)" aria-label="Desfazer">↶</button>
       <button id="redoBtn" class="icon-btn" title="Refazer (Ctrl+Y)" aria-label="Refazer">↷</button>
       <span class="divider-v"></span>
@@ -93,7 +93,7 @@
     </aside>
   </div>
 </div>
-<dialog id="settingsDialog"><form method="dialog" class="dialog-body"><div class="dialog-head"><h2>Configurações do projeto</h2><button value="cancel" class="mini-btn" aria-label="Fechar">✕</button></div><p class="muted">Crie uma nova tela. Isso substituirá o desenho atual.</p><label>Largura (px)<input type="number" id="newWidth" min="8" max="128" value="32"></label><label>Altura (px)<input type="number" id="newHeight" min="8" max="128" value="32"></label><div class="dialog-actions"><button value="cancel" class="btn">Cancelar</button><button id="newProjectBtn" value="cancel" class="btn primary">Criar tela</button></div></form></dialog>
+<dialog id="settingsDialog"><form method="dialog" class="dialog-body"><div class="dialog-head"><h2>Configurações do projeto</h2><button value="cancel" class="mini-btn" aria-label="Fechar">✕</button></div><p class="muted">Crie uma nova tela. Isso substituirá o desenho atual.</p><label>Largura (px)<input type="number" id="newWidth" min="8" max="10000" value="32"></label><label>Altura (px)<input type="number" id="newHeight" min="8" max="10000" value="32"></label><div class="dialog-actions"><button value="cancel" class="btn">Cancelar</button><button id="newProjectBtn" value="cancel" class="btn primary">Criar tela</button></div></form></dialog>
 <dialog id="helpDialog"><form method="dialog" class="dialog-body"><div class="dialog-head"><h2>Atalhos</h2><button value="cancel" class="mini-btn">✕</button></div><div class="shortcuts"><span>B</span>Lápis<span>E</span>Borracha<span>G</span>Balde<span>M</span>Seleção<span>Q</span>Laço<span>W</span>Seleção por cor<span>I</span>Conta-gotas<span>L</span>Linha<span>R</span>Retângulo<span>O</span>Elipse<span>Ctrl+C/V</span>Copiar/colar seleção<span>Delete</span>Apagar seleção<span>Ctrl+Z</span>Desfazer<span>Ctrl+Y</span>Refazer<span>Espaço + arrastar</span>Mover canvas<span>P</span>Reproduzir<span>Shift+D</span>Modo sem distrações</div><div class="dialog-actions"><button value="cancel" class="btn primary">Entendi</button></div></form></dialog>
 <input id="fileInput" type="file" accept=".json,application/json" hidden><input id="pngInput" type="file" accept="image/png" hidden>
 <dialog id="animationDialog"><form method="dialog" class="dialog-body"><div class="dialog-head"><h2 id="animationDialogTitle">Nova animação</h2><button value="cancel" class="mini-btn" aria-label="Fechar">✕</button></div><label>Nome da animação<input type="text" id="animationName" maxlength="40" value="Idle" required></label><label>Frame inicial (começa em 1)<input type="number" id="animationStart" min="1" value="1"></label><label>Frame final<input type="number" id="animationEnd" min="1" value="8"></label><div class="dialog-actions"><button value="cancel" class="btn">Cancelar</button><button id="confirmAnimation" value="cancel" class="btn primary">Salvar animação</button></div></form></dialog><dialog id="gameModeDialog" class="game-mode-dialog" aria-label="Modo Desenvolvedor de Jogos">
@@ -150,12 +150,61 @@
   <form method="dialog" class="dialog-body">
     <div class="dialog-head"><h2>Novo projeto</h2><button value="cancel" class="mini-btn" aria-label="Fechar">✕</button></div>
     <label>Nome<input id="blankProjectName" type="text" maxlength="60" value="Novo projeto"></label>
-    <label>Largura (8–128)<input id="blankProjectWidth" type="number" min="8" max="128" value="32"></label>
-    <label>Altura (8–128)<input id="blankProjectHeight" type="number" min="8" max="128" value="32"></label>
+    <label>Largura (8–10.000)<input id="blankProjectWidth" type="number" min="8" max="10000" value="32"></label>
+    <label>Altura (8–10.000)<input id="blankProjectHeight" type="number" min="8" max="10000" value="32"></label>
     <div class="dialog-actions"><button value="cancel" class="btn">Cancelar</button><button id="confirmBlankProject" value="cancel" class="btn primary">Criar projeto</button></div>
   </form>
 </dialog>
+<dialog id="largeCanvasDialog" class="large-canvas-dialog" aria-label="Editor de pixel art em tela grande">
+  <section class="large-shell">
+    <header class="large-header">
+      <div><span class="large-kicker">PIXEL-BMister · BIG CANVAS</span><h2>Editor de tela grande</h2><small>Armazenamento em blocos — até 10.000 × 10.000 pixels</small></div>
+      <div class="large-head-actions">
+        <button id="largeProjects" class="btn" title="Gerenciar trabalhos em tela grande">Projetos</button>
+        <button id="largeExport" class="btn primary">Exportar PNG</button>
+        <button id="largeSaveFile" class="btn">Salvar projeto</button>
+        <button id="largeClose" class="mini-btn" aria-label="Voltar ao Studio">✕</button>
+      </div>
+    </header>
+    <div class="large-body">
+      <aside class="large-toolbar" aria-label="Ferramentas de tela grande">
+        <button data-large-tool="pencil" class="active" title="Lápis (B)">✎</button>
+        <button data-large-tool="eraser" title="Borracha (E)">⌫</button>
+        <button data-large-tool="line" title="Linha (L)">╱</button>
+        <button data-large-tool="rect" title="Retângulo (R)">□</button>
+        <button data-large-tool="eyedropper" title="Conta-gotas (I)">♢</button>
+      </aside>
+      <div class="large-stage">
+        <div class="large-canvas-controls">
+          <span id="largeDimensions">10.000 × 10.000</span>
+          <span id="largePointer">X: 0 · Y: 0</span>
+          <button id="largeZoomOut" class="mini-btn" title="Reduzir zoom">−</button>
+          <span id="largeZoomLabel">100%</span>
+          <button id="largeZoomIn" class="mini-btn" title="Ampliar zoom">+</button>
+          <button id="largeZoomFit" class="mini-btn" title="Ajustar à área visível">⤢</button>
+          <button id="largeUndo" class="mini-btn" title="Desfazer (Ctrl+Z)">↶</button>
+          <button id="largeRedo" class="mini-btn" title="Refazer (Ctrl+Y)">↷</button>
+        </div>
+        <div id="largeViewport" class="large-viewport"><canvas id="largeDrawCanvas" width="800" height="600" tabindex="0" aria-label="Tela grande de desenho"></canvas></div>
+        <footer class="large-footer"><span>Espaço + arrastar para mover · Roda do mouse para zoom · B/E/L/R/I: ferramentas</span><span id="largeStatus" role="status" aria-live="polite">Pronto</span></footer>
+      </div>
+      <aside class="large-settings">
+        <label>Nome do projeto<input id="largeName" type="text" maxlength="60" value="Arte em tela grande"></label>
+        <label>Cor<input id="largeColor" type="color" value="#9b90ac"></label>
+        <label>Tamanho do pincel <span id="largeBrushValue">1 px</span><input id="largeBrush" type="range" min="1" max="32" value="1"></label>
+        <div class="large-layer-section"><strong>Camadas</strong><button id="largeAddLayer" class="mini-btn" title="Adicionar camada">＋</button></div>
+        <div id="largeLayerList" class="large-layer-list"></div>
+        <p class="large-help">Este modo usa blocos de pixels e salva trabalhos localmente no navegador. Focado em desenho estático; as animações, frames e ferramentas avançadas continuam no Studio tradicional.</p>
+      </aside>
+    </div>
+  </section>
+  <input id="largeImportFile" type="file" accept=".pxbig,application/json" hidden>
+</dialog>
+<dialog id="largeProjectsDialog" class="large-projects-dialog" aria-label="Projetos de tela grande">
+  <section class="large-projects-shell"><header><h2>Projetos de tela grande</h2><button id="largeProjectsClose" class="mini-btn" aria-label="Fechar lista">✕</button></header><button id="largeImportBtn" class="btn">Importar arquivo .pxbig</button><div id="largeProjectList"></div></section>
+</dialog>
 <div id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+<script src="large-canvas.js"></script>
 <script src="project-manager.js"></script>
 <script src="professional-tools.js"></script>
 <script src="gif-export.js"></script><script src="game-physics.js"></script>
