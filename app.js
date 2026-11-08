@@ -367,6 +367,7 @@ savingBlocked=true;recoverProject();savingBlocked=false;refreshAnimationList();r
 /* Unified tools API: the 10K tiled renderer reads the same tool, color and brush settings. */
 window.PixelStudioEditor={
  getColor:()=>ink,
+ setColor:value=>setColor(value),
  getTool:()=>tool,
  getBrushSize:()=>size,
  getBrushShape:()=>$('brushShape').value,
