@@ -45,5 +45,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: pixel-bmister-studio-homologation
-          path: tests/studio-v2-homologation.png
+          path: tests/studio-*.png
           if-no-files-found: ignore
