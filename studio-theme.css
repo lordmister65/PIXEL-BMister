@@ -460,3 +460,25 @@ dialog{background:#29292e;border-color:#595660;color:#eeeaf0}
  .tool.active,.frame-card.selected,.layer-item.active{outline:2px solid Highlight;outline-offset:1px}
  .studio-menu-list,.panel,.project-home{border:1px solid CanvasText}
 }
+
+/* Dock panel gestures — drag header down to minimize, up to restore. */
+.inspector .panel > .panel-head,.editor .timeline > .section-head{
+  cursor:ns-resize;touch-action:pan-x;user-select:none;position:relative;
+}
+.inspector .panel > .panel-head button:not(.studio-dock-toggle),
+.editor .timeline > .section-head button:not(.studio-dock-toggle){cursor:pointer}
+.studio-dock-toggle{
+  width:26px;height:26px;flex:0 0 26px;margin-left:6px;
+  background:#36343d;border:1px solid #504c57;border-radius:5px;
+  color:#d8d2df;font-size:17px;display:grid;place-items:center;
+  cursor:pointer;transition:background .13s ease;
+}
+.studio-dock-toggle:hover,.studio-dock-toggle:focus-visible{background:#56515e;outline:2px solid #9c94aa;outline-offset:1px}
+.inspector .panel.studio-panel-minimized > :not(.panel-head){display:none!important}
+.inspector .panel.studio-panel-minimized{min-height:39px}
+.editor .timeline.studio-timeline-minimized > :not(.section-head){display:none!important}
+.editor .timeline.studio-timeline-minimized{height:43px!important;min-height:43px!important;flex-shrink:0}
+.inspector .panel.studio-panel-minimized .studio-dock-toggle,
+.editor .timeline.studio-timeline-minimized .studio-dock-toggle{background:#494452;border-color:#706a7b}
+.editor .timeline > .section-head .studio-dock-toggle{margin-left:4px}
+@media(max-width:720px){.editor .timeline.studio-timeline-minimized{height:43px!important}}
