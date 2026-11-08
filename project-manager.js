@@ -101,7 +101,7 @@ function createManager(adapter){
   writeQueue=task;
   try{
    await task;
-   if(!activeId){writeActiveId(id);pendingId=null;}
+   if(!activeId){writeActiveId(id);pendingId=null;root.PixelDocumentTabs?.registerClassic(id,doc,{focus:false});}
    if(activeId===id)lastSavedRevision=Math.max(lastSavedRevision,savedAt);
    if(notify)toast('Projeto salvo na biblioteca do navegador');
    return true;
@@ -140,6 +140,7 @@ function createManager(adapter){
   try{
    adapter.loadProject(clone(record.document));
    writeActiveId(id);revision=0;lastSavedRevision=0;
+   root.PixelDocumentTabs?.registerClassic(id,record.document);
    home.close();toast('Projeto aberto: '+record.name);
   }finally{changing=false;}
  }
@@ -153,7 +154,7 @@ function createManager(adapter){
   changing=true;
   try{
    writeActiveId(id);adapter.loadProject(clone(doc));
-   revision=0;lastSavedRevision=0;
+   revision=0;lastSavedRevision=0;root.PixelDocumentTabs?.registerClassic(id,doc);
    home.close();toast('Projeto criado: '+doc.name);
   }finally{changing=false;}
   return true;
@@ -274,9 +275,10 @@ function createManager(adapter){
    if(previous&&store){const record=await store.get(previous);if(record){activeId=previous;let session=null;try{session=JSON.parse(localStorage.getItem('pixel-bmister-project-v1')||'null');}catch(_e){}if(session?.libraryId===previous&&adapter.valid(session)){revision=1;lastSavedRevision=0;}else if(adapter.valid(record.document)){changing=true;try{adapter.loadProject(clone(record.document));}finally{changing=false;}}}}
   }catch(_e){}
   initializing=false;
+  root.PixelDocumentTabs?.registerClassic(activeId||'draft',current(),{focus:false});
   await show();
  }
- return {init,onChanged,saveCurrent,importDocument,newBlank:(name,width,height)=>createDocument(makeTemplate('blank',name,width,height)),show,hide,get activeId(){return activeId;}};
+ return {init,onChanged,saveCurrent,flush,openRecord,importDocument,newBlank:(name,width,height)=>createDocument(makeTemplate('blank',name,width,height)),show,hide,get activeId(){return activeId;}};
 }
 root.PixelProjectLibrary={createManager,makeTemplate,openDatabase};
 })(window);
